@@ -120,8 +120,8 @@ def dashboard(request):
     if role in ['admin', 'teacher']:
         cheat_alerts = StudentTestSubmission.objects.filter(status='disqualified').select_related('student', 'test').order_by('-cheated_at')[:5]
 
-    if role == 'admin':
-        # Admin Dashboard
+    if role in ['admin', 'teacher']:
+        # Admin / Teacher Dashboard
         total_groups = Group.objects.count()
         total_students = Student.objects.count()
         new_leads_count = Lead.objects.filter(status='new').count()
