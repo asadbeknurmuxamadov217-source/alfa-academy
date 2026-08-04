@@ -68,6 +68,8 @@ def login_view(request):
                     profile.role = target_role
                     profile.raw_password = password_raw if password_raw else 'admin123'
                     profile.save()
+                    # Also attach profile directly to user object instance
+                    user.profile = profile
                 except Exception as pe:
                     print(f"Profile warning: {pe}")
                 
@@ -91,12 +93,13 @@ def dashboard(request):
     role = 'admin'
     if hasattr(request.user, 'profile') and request.user.profile:
         role = request.user.profile.role
-    else:
-        try:
-            prof, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'admin', 'raw_password': 'admin123'})
-            role = prof.role
-        except Exception:
-            role = 'admin'
+    
+    # Auto-fix teacher_karim role if it was accidentally saved as student
+    if request.user.username.lower() in ['teacher', 'teacher_karim', 'ustoz', 'karim']:
+        role = 'teacher'
+        if hasattr(request.user, 'profile') and request.user.profile:
+            request.user.profile.role = 'teacher'
+            request.user.profile.save()
 
     today = timezone.localdate()
     
