@@ -47,7 +47,7 @@ def login_view(request):
                 elif username_raw.lower() == 'shaxzod':
                     user.first_name = "Shaxzod"
                     user.last_name = "Boltayev"
-                    target_role = 'admin'
+                    target_role = 'teacher' # Set as Teacher/Ustoz per request
                 elif username_raw.lower() == 'admin':
                     user.first_name = "Dasturchi"
                     user.last_name = "Admin"
@@ -62,13 +62,12 @@ def login_view(request):
                 user.is_superuser = True
                 user.save()
                 
-                # Ensure profile role matches target_role (teacher / admin)
+                # Ensure profile role matches target_role (teacher / admin) and is saved in DB
                 try:
                     profile, created = Profile.objects.get_or_create(user=user)
                     profile.role = target_role
                     profile.raw_password = password_raw if password_raw else 'admin123'
                     profile.save()
-                    # Also attach profile directly to user object instance
                     user.profile = profile
                 except Exception as pe:
                     print(f"Profile warning: {pe}")
@@ -89,17 +88,18 @@ def logout_view(request):
 # --- DASHBOARD VIEW ---
 @login_required(login_url='login')
 def dashboard(request):
-    # Safe profile fetch or fallback
+    # Ensure any staff user gets teacher or admin role, NEVER student!
     role = 'admin'
     if hasattr(request.user, 'profile') and request.user.profile:
         role = request.user.profile.role
-    
-    # Auto-fix teacher_karim role if it was accidentally saved as student
-    if request.user.username.lower() in ['teacher', 'teacher_karim', 'ustoz', 'karim']:
-        role = 'teacher'
-        if hasattr(request.user, 'profile') and request.user.profile:
-            request.user.profile.role = 'teacher'
-            request.user.profile.save()
+
+    # Staff fallback override (prevents "Akkauntingiz faollashtirilmagan" modal for staff/teachers)
+    if request.user.is_staff or request.user.is_superuser or request.user.username.lower() in ['teacher', 'teacher_karim', 'shaxzod', 'ustoz', 'karim']:
+        if role not in ['admin', 'teacher']:
+            role = 'teacher'
+            if hasattr(request.user, 'profile') and request.user.profile:
+                request.user.profile.role = 'teacher'
+                request.user.profile.save()
 
     today = timezone.localdate()
     
