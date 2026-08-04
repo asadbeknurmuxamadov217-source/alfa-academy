@@ -84,11 +84,12 @@ def logout_view(request):
 # --- DASHBOARD VIEW ---
 @login_required(login_url='login')
 def dashboard(request):
+    # Ensure every logged in user gets a valid Profile with admin role
+    profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'admin', 'raw_password': 'admin123'})
+    profile.role = 'admin'
+    profile.save()
+    request.user.profile = profile
     role = 'admin'
-    if hasattr(request.user, 'profile') and request.user.profile:
-        request.user.profile.role = 'admin'
-        request.user.profile.save()
-        role = 'admin'
 
     today = timezone.localdate()
     
