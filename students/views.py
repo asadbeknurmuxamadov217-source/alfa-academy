@@ -29,10 +29,23 @@ def login_view(request):
         
     error_msg = None
     if request.method == 'POST':
-        username = request.POST.get('username')
-        password = request.POST.get('password')
+        username_raw = request.POST.get('username', '').strip()
+        password_raw = request.POST.get('password', '').strip()
         
-        user = authenticate(request, username=username, password=password)
+        # 1. Standard Django authentication
+        user = authenticate(request, username=username_raw, password=password_raw)
+        
+        # 2. Case-insensitive fallback if user entered uppercase/lowercase
+        if user is None and username_raw:
+            matched_user = User.objects.filter(username__iexact=username_raw).first()
+            if matched_user:
+                if matched_user.check_password(password_raw):
+                    user = matched_user
+                elif hasattr(matched_user, 'profile') and matched_user.profile.raw_password == password_raw:
+                    matched_user.set_password(password_raw)
+                    matched_user.save()
+                    user = matched_user
+
         if user is not None:
             login(request, user)
             return redirect('dashboard')
