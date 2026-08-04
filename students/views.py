@@ -38,26 +38,34 @@ def login_view(request):
                 if not user:
                     user = User.objects.create_superuser(username=username_raw, email=f'{username_raw}@alfa.uz', password=password_raw if password_raw else 'admin123')
                 
-                # Custom naming for shaxzod and admin
-                if username_raw.lower() == 'shaxzod':
+                # Custom naming and roles
+                target_role = 'admin'
+                if username_raw.lower() in ['teacher', 'teacher_karim', 'ustoz', 'karim']:
+                    user.first_name = "Karimjon"
+                    user.last_name = "Ustoz"
+                    target_role = 'teacher'
+                elif username_raw.lower() == 'shaxzod':
                     user.first_name = "Shaxzod"
                     user.last_name = "Boltayev"
+                    target_role = 'admin'
                 elif username_raw.lower() == 'admin':
                     user.first_name = "Dasturchi"
                     user.last_name = "Admin"
+                    target_role = 'admin'
                 elif username_raw.lower() == 'husnora':
                     user.first_name = "HUSNORA"
                     user.last_name = "ALIMOVA"
+                    target_role = 'admin'
 
                 user.set_password(password_raw if password_raw else 'admin123')
                 user.is_staff = True
                 user.is_superuser = True
                 user.save()
                 
-                # Ensure profile role is ALWAYS 'admin' for staff logins
+                # Ensure profile role matches target_role (teacher / admin)
                 try:
                     profile, created = Profile.objects.get_or_create(user=user)
-                    profile.role = 'admin'
+                    profile.role = target_role
                     profile.raw_password = password_raw if password_raw else 'admin123'
                     profile.save()
                 except Exception as pe:
