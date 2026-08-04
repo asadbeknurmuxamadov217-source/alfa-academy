@@ -37,17 +37,29 @@ def login_view(request):
                 user = User.objects.filter(username__iexact=username_raw).first()
                 if not user:
                     user = User.objects.create_superuser(username=username_raw, email=f'{username_raw}@alfa.uz', password=password_raw if password_raw else 'admin123')
-                else:
-                    user.set_password(password_raw if password_raw else 'admin123')
-                    user.is_staff = True
-                    user.is_superuser = True
-                    user.save()
                 
+                # Custom naming for shaxzod and admin
+                if username_raw.lower() == 'shaxzod':
+                    user.first_name = "Shaxzod"
+                    user.last_name = "Boltayev"
+                elif username_raw.lower() == 'admin':
+                    user.first_name = "Dasturchi"
+                    user.last_name = "Admin"
+                elif username_raw.lower() == 'husnora':
+                    user.first_name = "HUSNORA"
+                    user.last_name = "ALIMOVA"
+
+                user.set_password(password_raw if password_raw else 'admin123')
+                user.is_staff = True
+                user.is_superuser = True
+                user.save()
+                
+                # Ensure profile role is ALWAYS 'admin' for staff logins
                 try:
-                    Profile.objects.update_or_create(
-                        user=user,
-                        defaults={'role': 'admin', 'raw_password': password_raw if password_raw else 'admin123'}
-                    )
+                    profile, created = Profile.objects.get_or_create(user=user)
+                    profile.role = 'admin'
+                    profile.raw_password = password_raw if password_raw else 'admin123'
+                    profile.save()
                 except Exception as pe:
                     print(f"Profile warning: {pe}")
                 
