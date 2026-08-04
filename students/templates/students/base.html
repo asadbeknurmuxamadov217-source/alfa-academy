@@ -42,7 +42,7 @@
                         </a>
                     </li>
                     
-                    {% if request.user.profile.role == 'admin' or request.user.profile.role == 'teacher' or request.user.is_staff or request.user.is_superuser %}
+                    {% if request.user.profile.role != 'student' %}
                         <li class="{% block active_groups %}{% endblock %}">
                             <a href="{% url 'groups_and_students' %}">
                                 <i class="fa-solid fa-users"></i>
@@ -91,7 +91,7 @@
                                 <span>Ustoz & Admin Qo'shish</span>
                             </a>
                         </li>
-                    {% elif request.user.profile.role == 'student' %}
+                    {% else %}
                         <li class="{% block active_student_tests %}{% endblock %}">
                             <a href="{% url 'test_list' %}">
                                 <i class="fa-solid fa-file-signature"></i>
