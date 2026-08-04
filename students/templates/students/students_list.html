@@ -1,0 +1,301 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Guruhlar & O'quvchilar{% endblock %}
+
+{% block active_groups %}active{% endblock %}
+{% block active_t_groups %}active{% endblock %}
+{% block mob_active_groups %}active{% endblock %}
+{% block mob_active_t_groups %}active{% endblock %}
+
+{% block page_title %}Guruhlar va O'quvchilar Boshqaruvi{% endblock %}
+
+{% block content %}
+{% if is_admin %}
+<div class="groups-actions-row">
+    <button class="btn btn-primary" onclick="openModal('groupModal')">
+        <i class="fa-solid fa-folder-plus"></i> Yangi Guruh
+    </button>
+    <button class="btn btn-success" onclick="openModal('studentModal')">
+        <i class="fa-solid fa-user-plus"></i> Yangi O'quvchi
+    </button>
+</div>
+{% endif %}
+
+<!-- Groups Container (Collapsible Accordion Style) -->
+<div class="groups-accordion">
+    {% if groups %}
+        {% for group in groups %}
+        <div class="accordion-item" id="group-card-{{ group.id }}">
+            <div class="accordion-header" onclick="toggleAccordion({{ group.id }})">
+                <div class="group-title-info">
+                    <span class="folder-icon"><i class="fa-solid fa-folder"></i></span>
+                    <h3 class="group-name">{{ group.name }}</h3>
+                    <span class="badge-count">{{ group.combined_count|default:group.students.count }} ta o'quvchi</span>
+                </div>
+                <div class="accordion-arrow" id="arrow-{{ group.id }}">
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+            
+            <div class="accordion-content" id="content-{{ group.id }}">
+                <div class="group-desc-box" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <strong>Guruh tavsifi:</strong> 
+                        <span>{% if group.description %}{{ group.description }}{% else %}Tavsif yo'q.{% endif %}</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <button type="button" 
+                                onclick="openAddStudentForGroup({{ group.id }})" 
+                                class="btn btn-success" 
+                                style="padding: 6px 14px; font-size: 13px; border-radius: 8px; font-weight: 700; background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">
+                            <i class="fa-solid fa-user-plus"></i> O'quvchi Qo'shish
+                        </button>
+                        
+                        <button type="button" 
+                                onclick="openEditGroupModal({{ group.id }}, '{{ group.name|escapejs }}', '{{ group.description|default:""|escapejs }}')" 
+                                class="btn btn-primary" 
+                                style="padding: 6px 14px; font-size: 13px; border-radius: 8px; font-weight: 700; background-color: rgba(79, 70, 229, 0.15); color: #818cf8; border: 1px solid rgba(79, 70, 229, 0.3);">
+                            <i class="fa-solid fa-pen"></i> Guruh Nomini Tahrirlash
+                        </button>
+
+                        {% if is_admin %}
+                            <a href="{% url 'delete_group' group.id %}" 
+                               onclick="return confirm('Haqiqatdan ham {{ group.name|escapejs }} guruhini va undagi barcha ma\'lumotlarni o\'chirmoqchimisiz?')" 
+                               class="btn btn-danger" 
+                               style="padding: 6px 14px; font-size: 13px; border-radius: 8px; font-weight: 700; background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); text-decoration: none;">
+                                <i class="fa-solid fa-trash-can"></i> O'chirish
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="students-table-wrap">
+                    {% if group.all_combined_students %}
+                        <table class="students-table">
+                            <thead>
+                                <tr>
+                                    <th>F.I.O.</th>
+                                    <th>Telefon raqami</th>
+                                    <th>Login (Kirish)</th>
+                                    {% if is_admin %}<th class="actions-th">Harakatlar</th>{% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in group.all_combined_students %}
+                                <tr>
+                                    <td class="student-name-td">
+                                        <div class="student-avatar-small">
+                                            {{ student.first_name|slice:":1" }}{{ student.last_name|slice:":1" }}
+                                        </div>
+                                        <span>{{ student.first_name }} {{ student.last_name }}</span>
+                                    </td>
+                                    <td>
+                                        {% if student.phone %}
+                                            <a href="tel:{{ student.phone }}" class="phone-link"><i class="fa-solid fa-phone"></i> {{ student.phone }}</a>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if student.user %}
+                                            <code><i class="fa-solid fa-user-lock"></i> {{ student.user.username }}</code>
+                                        {% else %}
+                                            <span style="color: var(--text-gray); font-size: 13px;">Login berilmagan</span>
+                                        {% endif %}
+                                    </td>
+                                    {% if is_admin %}
+                                    <td class="student-actions">
+                                        <button class="action-btn edit-btn" onclick="openEditStudentModal({{ student.id }}, '{{ student.first_name|escapejs }}', '{{ student.last_name|escapejs }}', '{{ student.phone|escapejs }}', {{ group.id }})">
+                                            <i class="fa-solid fa-pen"></i> Tahrirlash
+                                        </button>
+                                        <form action="{% url 'delete_student' student.id %}" method="post" class="inline-form" onsubmit="return confirm('O\'quvchini o\'chirishni tasdiqlaysizmi?')">
+                                            {% csrf_token %}
+                                            <button type="submit" class="action-btn delete-btn">
+                                                <i class="fa-solid fa-trash"></i> O'chirish
+                                            </button>
+                                        </form>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="group-empty-state">
+                            <i class="fa-solid fa-users-slash"></i>
+                            <p>Ushbu guruhda hali o'quvchilar yo'q.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state-large">
+            <i class="fa-solid fa-users-viewfinder"></i>
+            <h2>Tizimda guruhlar mavjud emas</h2>
+            <p>Boshlash uchun yangi guruh yarating va unga o'quvchilar qo'shing.</p>
+            <button class="btn btn-primary" onclick="openModal('groupModal')">Yangi guruh yaratish</button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- 1. Add Group Modal -->
+<div id="groupModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>Yangi Guruh Yaratish</h2>
+            <span class="close-btn" onclick="closeModal('groupModal')">&times;</span>
+        </div>
+        <form action="{% url 'add_group' %}" method="post" class="modal-form">
+            {% csrf_token %}
+            <div class="form-field">
+                <label for="group_name">Guruh nomi:</label>
+                <input type="text" id="group_name" name="name" required placeholder="Masalan: IELTS-2, Matematika-1">
+            </div>
+            <div class="form-field">
+                <label for="group_price">Kurs oylik narxi (so'mda):</label>
+                <input type="text" id="group_price" name="price" placeholder="Masalan: 350 000 so'm/oy">
+            </div>
+            <div class="form-field">
+                <label for="group_desc">Tavsif (ixtiyoriy):</label>
+                <textarea id="group_desc" name="description" placeholder="Dars kunlari, vaqti va boshqalar..."></textarea>
+            </div>
+            <div class="form-actions-modal">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('groupModal')">Bekor qilish</button>
+                <button type="submit" class="btn btn-submit">Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 2. Add Student Modal -->
+<div id="studentModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>Yangi O'quvchi Qo'shish</h2>
+            <span class="close-btn" onclick="closeModal('studentModal')">&times;</span>
+        </div>
+        <form action="{% url 'add_student' %}" method="post" class="modal-form">
+            {% csrf_token %}
+            <div class="form-field">
+                <label for="student_fname">Ismi:</label>
+                <input type="text" id="student_fname" name="first_name" required placeholder="Masalan: Sardor">
+            </div>
+            <div class="form-field">
+                <label for="student_lname">Familiyasi:</label>
+                <input type="text" id="student_lname" name="last_name" required placeholder="Masalan: Karimov">
+            </div>
+            <div class="form-field">
+                <label for="student_phone">Telefon raqami:</label>
+                <input type="text" id="student_phone" name="phone" placeholder="Masalan: +998901234567">
+            </div>
+            <div class="form-field">
+                <label for="student_group">Guruhi:</label>
+                <select id="student_group" name="group" required>
+                    <option value="" disabled selected>Guruhni tanlang</option>
+                    {% for group in groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-field">
+                <label for="student_username">Login (Tizimga kirish uchun):</label>
+                <input type="text" id="student_username" name="username" placeholder="Masalan: sardor_karimov (bo'sh qolsa avto yaratiladi)">
+            </div>
+            <div class="form-field">
+                <label for="student_password">Parol:</label>
+                <input type="password" id="student_password" name="password" placeholder="Masalan: 123456 (bo'sh qolsa: student123)">
+            </div>
+            
+            <div class="form-actions-modal">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('studentModal')">Bekor qilish</button>
+                <button type="submit" class="btn btn-submit">Qo'shish</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 3. Edit Student Modal -->
+<div id="editStudentModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>O'quvchi Ma'lumotlarini Tahrirlash</h2>
+            <span class="close-btn" onclick="closeModal('editStudentModal')">&times;</span>
+        </div>
+        <form id="editStudentForm" method="post" class="modal-form">
+            {% csrf_token %}
+            <div class="form-field">
+                <label for="edit_student_fname">Ismi:</label>
+                <input type="text" id="edit_student_fname" name="first_name" required>
+            </div>
+            <div class="form-field">
+                <label for="edit_student_lname">Familiyasi:</label>
+                <input type="text" id="edit_student_lname" name="last_name" required>
+            </div>
+            <div class="form-field">
+                <label for="edit_student_phone">Telefon raqami:</label>
+                <input type="text" id="edit_student_phone" name="phone">
+            </div>
+            <div class="form-field">
+                <label for="edit_student_group">Guruhi:</label>
+                <select id="edit_student_group" name="group" required>
+                    {% for group in groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-actions-modal">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('editStudentModal')">Bekor qilish</button>
+                <button type="submit" class="btn btn-submit">Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Edit Group Modal -->
+<div id="editGroupModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>Guruh Nomini va Tavsifini Tahrirlash</h2>
+            <span class="close-btn" onclick="closeModal('editGroupModal')">&times;</span>
+        </div>
+        <form id="editGroupForm" method="post" class="modal-form">
+            {% csrf_token %}
+            <div class="form-field">
+                <label for="edit_group_name">Guruh nomi:</label>
+                <input type="text" id="edit_group_name" name="name" required placeholder="Masalan: Matematika-1">
+            </div>
+            <div class="form-field">
+                <label for="edit_group_desc">Guruh tavsifi (Dars kunlari/Vaqti):</label>
+                <input type="text" id="edit_group_desc" name="description" placeholder="Masalan: Dush/Shor/Jum 14:00-16:00">
+            </div>
+            <div class="form-actions-modal">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('editGroupModal')">Bekor qilish</button>
+                <button type="submit" class="btn btn-submit">Saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function openEditGroupModal(groupId, name, description) {
+        document.getElementById('edit_group_name').value = name;
+        document.getElementById('edit_group_desc').value = description || '';
+        document.getElementById('editGroupForm').action = `/groups/edit/${groupId}/`;
+        openModal('editGroupModal');
+    }
+
+    function openAddStudentForGroup(groupId) {
+        const groupSelect = document.getElementById('student_group');
+        if (groupSelect) {
+            groupSelect.value = groupId;
+        }
+        openModal('studentModal');
+    }
+</script>
+{% endblock %}
+{% endblock %}

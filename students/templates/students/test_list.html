@@ -1,0 +1,103 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Mening Imtihonlarim{% endblock %}
+
+{% block active_certs %}active{% endblock %}
+
+{% block page_title %}Faol Testlar va Imtihonlar{% endblock %}
+
+{% block content %}
+<div class="accordion-item" style="padding: 24px;">
+    {% if error_msg %}
+        <div class="group-empty-state">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 40px; color: #ef4444; margin-bottom: 12px; display: block;"></i>
+            <p>{{ error_msg }}</p>
+        </div>
+    {% else %}
+        {% if test_items %}
+            <div class="students-table-wrap">
+                <table class="students-table">
+                    <thead>
+                        <tr>
+                            <th>Imtihon nomi</th>
+                            <th>Yuklangan sana</th>
+                            <th>Urinish holati</th>
+                            <th>Natijangiz</th>
+                            <th class="actions-th">Amal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in test_items %}
+                        <tr>
+                            <td style="font-weight: 700;">{{ item.test.title }}</td>
+                            <td>{{ item.test.created_at|date:"d-M, Y" }}</td>
+                            <td>
+                                {% if not item.submission %}
+                                    <span class="badge-count" style="background-color: var(--border-color); color: var(--text-gray);">Boshlanmagan</span>
+                                {% else %}
+                                    {% if item.submission.status == 'completed' %}
+                                        <span class="badge-count" style="background-color: var(--accent-green-light); color: var(--accent-green);">Topshirildi</span>
+                                    {% elif item.submission.status == 'disqualified' %}
+                                        <span class="badge-count" style="background-color: rgba(239, 68, 68, 0.15); color: #ef4444;">
+                                            <i class="fa-solid fa-user-slash"></i> Chetlashtirilgan
+                                        </span>
+                                    {% else %}
+                                        <span class="badge-count" style="background-color: var(--accent-yellow-light); color: var(--accent-yellow);">Boshlangan</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.submission %}
+                                    {% if item.submission.score is not None %}
+                                        <span class="badge-count" style="background-color: rgba(79, 70, 229, 0.1); color: var(--primary-color); font-weight: 800;">
+                                            {{ item.submission.score|floatformat:0 }}%
+                                        </span>
+                                    {% else %}
+                                        {% if item.submission.status == 'completed' %}
+                                            <span style="color: var(--accent-yellow); font-weight: 700;"><i class="fa-solid fa-clock-rotate-left"></i> Tekshirilmoqda</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="student-actions">
+                                <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
+                                    <!-- Savollar PDF faylini ko'rish -->
+                                    <a href="{{ item.test.file.url }}" target="_blank" class="btn btn-cancel" style="padding: 8px 12px; font-size: 12px; font-weight: 700; border-radius: 8px; text-decoration: none; border: 1px solid var(--border-color); color: #818cf8; white-space: nowrap;">
+                                        <i class="fa-solid fa-file-pdf"></i> Savollarni ko'rish
+                                    </a>
+
+                                    {% if not item.submission %}
+                                        <a href="{% url 'take_test' item.test.id %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 8px; text-decoration: none; white-space: nowrap;">
+                                            <i class="fa-solid fa-play"></i> Testni Boshlash
+                                        </a>
+                                    {% elif item.submission.status == 'started' %}
+                                        <a href="{% url 'take_test' item.test.id %}" class="btn btn-warning" style="padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 8px; text-decoration: none; color: white; white-space: nowrap;">
+                                            <i class="fa-solid fa-rotate-right"></i> Davom ettirish
+                                        </a>
+                                    {% elif item.submission.status == 'completed' %}
+                                        <a href="{% url 'take_test' item.test.id %}" class="btn btn-success" style="padding: 8px 16px; font-size: 13px; font-weight: 800; border-radius: 8px; text-decoration: none; background: #10b981; border: none; color: white; white-space: nowrap;">
+                                            <i class="fa-solid fa-square-poll-vertical"></i> Natija & Tahlil
+                                        </a>
+                                    {% else %}
+                                        <span style="font-size: 12px; color: #ef4444; font-weight: 700;"><i class="fa-solid fa-ban"></i> Bloklangan</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="group-empty-state">
+                <i class="fa-solid fa-circle-question" style="font-size: 40px; opacity: 0.5; margin-bottom: 12px; display: block;"></i>
+                <p>Hozircha guruhingiz uchun faol testlar mavjud emas.</p>
+            </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

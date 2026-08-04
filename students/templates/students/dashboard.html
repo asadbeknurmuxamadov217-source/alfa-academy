@@ -1,0 +1,552 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Asosiy Oyna{% endblock %}
+
+{% block active_dashboard %}active{% endblock %}
+{% block mob_active_dashboard %}active{% endblock %}
+
+{% block page_title %}Asosiy Oyna{% endblock %}
+
+{% block content %}
+<style>
+    /* Styling for Leaderboard widget inside dashboard */
+    .dashboard-leaderboard-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+    }
+    .leaderboard-mini-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 16px;
+    }
+    .leaderboard-mini-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        padding: 8px 12px;
+        border-radius: var(--radius-md);
+    }
+    .leaderboard-mini-item span.rank {
+        font-weight: 800;
+        font-size: 11px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .rank-1 { background-color: rgba(234, 179, 8, 0.15); color: #eab308; }
+    .rank-2 { background-color: rgba(148, 163, 184, 0.15); color: #64748b; }
+    .rank-3 { background-color: rgba(180, 83, 9, 0.15); color: #c2410c; }
+    .rank-other { background-color: rgba(0,0,0,0.03); color: var(--text-muted); }
+    
+    .cheat-alert-item {
+        border-left: 4px solid #ef4444 !important;
+        background-color: rgba(239, 68, 68, 0.02) !important;
+    }
+</style>
+
+{% if role == 'admin' %}
+    <!-- ================= ADMIN DASHBOARD ================= -->
+    <!-- Quick Stats Row -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon icon-groups">
+                <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Guruhlar</h3>
+                <p class="stat-number">{{ total_groups }} ta</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-students">
+                <i class="fa-solid fa-user-group"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Jami O'quvchilar</h3>
+                <p class="stat-number">{{ total_students }} ta</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-attendance">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Bugungi Davomat</h3>
+                <p class="stat-number">{{ attendance_rate }}%</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-grade" style="background-color: #ecfdf5; color: #10b981;">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Oydagi to'lovlar</h3>
+                <p class="stat-number" style="font-size: 16px; margin-top: 4px;">{{ payments_sum }} UZS</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Grid -->
+    <div class="dashboard-grid" style="grid-template-columns: 1.1fr 0.9fr;">
+        <!-- Guruhlar holati -->
+        <div class="dashboard-card card-groups-progress">
+            <div class="card-header-simple">
+                <h2>Guruhlar davomati (Bugun)</h2>
+            </div>
+            <div class="card-body">
+                {% if group_stats %}
+                    <div class="groups-progress-list">
+                        {% for g in group_stats %}
+                        <div class="group-progress-item">
+                            <div class="group-details">
+                                <span class="group-name">{{ g.name }}</span>
+                                <span class="group-meta">{{ g.students_count }} o'quvchi</span>
+                            </div>
+                            <div class="progress-bar-wrap">
+                                <div class="progress-bar-fill" style="width: {{ g.attendance_rate }}%"></div>
+                            </div>
+                            <span class="progress-percent">{{ g.attendance_rate }}%</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <p>Hozircha guruhlar mavjud emas.</p>
+                        <a href="{% url 'groups_and_students' %}" class="btn-sm btn-primary">Guruh yaratish</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Leaderboard (O'quvchilar Reytingi) -->
+        <div class="dashboard-card">
+            <div class="card-header-simple">
+                <h2><i class="fa-solid fa-trophy" style="color: #facc15; margin-right: 6px;"></i> O'quvchilar Reytingi</h2>
+            </div>
+            <div class="card-body">
+                <div class="leaderboard-mini-list">
+                    {% if leaderboard %}
+                        {% for entry in leaderboard %}
+                        <div class="leaderboard-mini-item">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="rank {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-other{% endif %}">
+                                    {{ forloop.counter }}
+                                </span>
+                                <div>
+                                    <strong style="font-size: 13px;">{{ entry.student.first_name }} {{ entry.student.last_name }}</strong>
+                                    <span style="display: block; font-size: 10px; color: var(--text-muted);">{{ entry.student.group.name }}</span>
+                                </div>
+                            </div>
+                            <strong style="color: var(--secondary-color); font-size: 13px;">{{ entry.avg_grade }} <i class="fa-solid fa-star" style="color: #facc15; font-size: 10px;"></i></strong>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted" style="text-align: center; font-size: 12px; margin-top: 20px;">Hozircha ma'lumotlar yo'q.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Grid: Recent grades, Cheat alerts, and Leads summary -->
+    <div class="dashboard-grid" style="grid-template-columns: 1.1fr 0.9fr; margin-top: 24px;">
+        <!-- Recent Grades -->
+        <div class="dashboard-card card-recent-grades">
+            <div class="card-header-simple">
+                <h2>Oxirgi qo'yilgan baholar</h2>
+                <a href="{% url 'grades' %}" class="view-all-link">Jurnal <i class="fa-solid fa-chevron-right"></i></a>
+            </div>
+            <div class="card-body">
+                {% if recent_grades %}
+                    <div class="recent-grades-list">
+                        {% for g in recent_grades %}
+                        <div class="recent-grade-item">
+                            <div class="grade-student-info">
+                                <span class="student-name">{{ g.student.first_name }} {{ g.student.last_name }}</span>
+                                <span class="student-group">{{ g.student.group.name }}</span>
+                            </div>
+                            <div class="grade-badge-wrap">
+                                <span class="grade-type-badge">{{ g.get_grade_type_display }}</span>
+                                <span class="grade-score-circle score-{{ g.grade }}">{{ g.grade }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fa-solid fa-award"></i>
+                        <p>Hali baholar qo'yilmagan.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Cheat Alerts & Leads info -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- Cheat Alerts Card -->
+            {% if cheat_alerts %}
+            <div class="dashboard-card" style="border: 1px solid #fecaca; background-color: rgba(239, 68, 68, 0.01);">
+                <div class="card-header-simple">
+                    <h2 style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Firgarlik xabarlari (Proctoring)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="recent-grades-list">
+                        {% for sub in cheat_alerts %}
+                        <div class="recent-grade-item cheat-alert-item">
+                            <div class="grade-student-info">
+                                <span class="student-name" style="color: #b91c1c;">{{ sub.student.first_name }} {{ sub.student.last_name }}</span>
+                                <span class="student-group">{{ sub.test.title }} • {{ sub.cheated_at|date:"H:i" }}</span>
+                            </div>
+                            <span class="badge-count" style="background-color: #fef2f2; color: #b91c1c; font-size: 11px;">Chetlashtirildi</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- New Leads card -->
+            <div class="dashboard-card">
+                <div class="card-header-simple">
+                    <h2>Yangiliklar va Murojaatlar</h2>
+                </div>
+                <div class="card-body" style="text-align: center; padding: 20px 0;">
+                    <i class="fa-solid fa-envelope-open-text" style="font-size: 40px; color: var(--primary-color); margin-bottom: 12px;"></i>
+                    <p style="font-size: 14px; font-weight: 600; margin-bottom: 16px;">Landing sahifasidan {{ new_leads_count }} ta yangi ariza kelib tushdi.</p>
+                    <a href="{% url 'leads_list' %}" class="btn btn-primary" style="padding: 10px 20px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 6px; display: inline-block;">
+                        Arizalarni ko'rish
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Shortcuts -->
+    <div class="shortcuts-section">
+        <h2>Tezkor Harakatlar</h2>
+        <div class="shortcuts-grid">
+            <a href="{% url 'groups_and_students' %}" class="shortcut-btn">
+                <i class="fa-solid fa-user-plus text-primary"></i>
+                <span>O'quvchi Qo'shish</span>
+            </a>
+            <a href="{% url 'attendance' %}" class="shortcut-btn">
+                <i class="fa-solid fa-clipboard-user text-success"></i>
+                <span>Davomat Olish</span>
+            </a>
+            <a href="{% url 'payments' %}" class="shortcut-btn">
+                <i class="fa-solid fa-wallet text-warning"></i>
+                <span>To'lovlarni Yuritish</span>
+            </a>
+            <a href="{% url 'leads_list' %}" class="shortcut-btn">
+                <i class="fa-solid fa-envelope-open-text text-danger"></i>
+                <span>Kelgan Arizalar</span>
+            </a>
+        </div>
+    </div>
+
+{% elif role == 'teacher' %}
+    <!-- ================= TEACHER DASHBOARD ================= -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon icon-groups">
+                <i class="fa-solid fa-folder-open"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Jami Guruhlar</h3>
+                <p class="stat-number">{{ total_groups }} ta</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-students">
+                <i class="fa-solid fa-user-group"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Jami O'quvchilar</h3>
+                <p class="stat-number">{{ total_students }} ta</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-grade">
+                <i class="fa-solid fa-award"></i>
+            </div>
+            <div class="stat-info">
+                <h3>O'rtacha Baho</h3>
+                <p class="stat-number">{{ avg_grade }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid" style="grid-template-columns: 1.15fr 0.85fr;">
+        <!-- Recent grades column -->
+        <div class="dashboard-card card-recent-grades">
+            <div class="card-header-simple">
+                <h2>O'quvchilarga qo'ygan oxirgi baholaringiz</h2>
+                <a href="{% url 'grades' %}" class="view-all-link">Baholash <i class="fa-solid fa-chevron-right"></i></a>
+            </div>
+            <div class="card-body">
+                {% if recent_grades %}
+                    <div class="recent-grades-list">
+                        {% for g in recent_grades %}
+                        <div class="recent-grade-item">
+                            <div class="grade-student-info">
+                                <span class="student-name">{{ g.student.first_name }} {{ g.student.last_name }}</span>
+                                <span class="student-group">{{ g.student.group.name }}</span>
+                            </div>
+                            <div class="grade-badge-wrap">
+                                <span class="grade-type-badge">{{ g.get_grade_type_display }}</span>
+                                <span class="grade-score-circle score-{{ g.grade }}">{{ g.grade }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fa-solid fa-award"></i>
+                        <p>Hali baholar kiritmagansiz.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar: Cheat alerts and Leaderboard -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- Proctoring Alerts -->
+            {% if cheat_alerts %}
+            <div class="dashboard-card" style="border: 1px solid #fecaca; background-color: rgba(239, 68, 68, 0.01);">
+                <div class="card-header-simple">
+                    <h2 style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> Proctoring Qoidabuzarlik</h2>
+                </div>
+                <div class="card-body">
+                    <div class="recent-grades-list">
+                        {% for sub in cheat_alerts %}
+                        <div class="recent-grade-item cheat-alert-item" style="padding: 10px 14px;">
+                            <div class="grade-student-info">
+                                <span class="student-name" style="color: #b91c1c; font-size: 13px;">{{ sub.student.first_name }} {{ sub.student.last_name }}</span>
+                                <span class="student-group" style="font-size: 10px;">{{ sub.test.title }}</span>
+                            </div>
+                            <span class="badge-count" style="background-color: #fef2f2; color: #b91c1c; font-size: 10px;">Cheat</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Leaderboard card -->
+            <div class="dashboard-card">
+                <div class="card-header-simple">
+                    <h2><i class="fa-solid fa-trophy" style="color: #facc15; margin-right: 6px;"></i> O'quvchilar Reytingi</h2>
+                </div>
+                <div class="card-body">
+                    <div class="leaderboard-mini-list">
+                        {% if leaderboard %}
+                            {% for entry in leaderboard %}
+                            <div class="leaderboard-mini-item">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="rank {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-other{% endif %}">
+                                        {{ forloop.counter }}
+                                    </span>
+                                    <div>
+                                        <strong style="font-size: 13px;">{{ entry.student.first_name }} {{ entry.student.last_name }}</strong>
+                                        <span style="display: block; font-size: 10px; color: var(--text-muted);">{{ entry.student.group.name }}</span>
+                                    </div>
+                                </div>
+                                <strong style="color: var(--secondary-color); font-size: 13px;">{{ entry.avg_grade }} <i class="fa-solid fa-star" style="color: #facc15; font-size: 10px;"></i></strong>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted" style="text-align: center; font-size: 12px; margin-top: 20px;">Ma'lumotlar mavjud emas.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Shortcuts -->
+    <div class="shortcuts-section">
+        <h2>Ustoz Harakatlari</h2>
+        <div class="shortcuts-grid">
+            <a href="{% url 'grades' %}" class="shortcut-btn" style="flex-direction: row; justify-content: flex-start; gap: 20px;">
+                <i class="fa-solid fa-pen-to-square text-primary" style="font-size: 32px;"></i>
+                <div style="text-align: left;">
+                    <span style="display: block; font-size: 16px; font-weight: 700;">O'quvchilarni Baholash</span>
+                    <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Dars faolligi va baholar jurnali</span>
+                </div>
+            </a>
+            <a href="{% url 'test_list' %}" class="shortcut-btn" style="flex-direction: row; justify-content: flex-start; gap: 20px;">
+                <i class="fa-solid fa-file-circle-plus text-success" style="font-size: 32px;"></i>
+                <div style="text-align: left;">
+                    <span style="display: block; font-size: 16px; font-weight: 700;">Imtihonlarni Boshqarish</span>
+                    <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Yangi testlar yuklash va arizalarni tekshirish</span>
+                </div>
+            </a>
+        </div>
+    </div>
+
+{% else %}
+    <!-- ================= STUDENT DASHBOARD ================= -->
+    {% if student %}
+        <div class="welcome-card" style="background: linear-gradient(135deg, #4f46e5, #0d9488); color: white; border-radius: var(--radius-lg); padding: 32px; margin-bottom: 32px; box-shadow: var(--shadow-md);">
+            <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 8px;">Salom, {{ student.first_name }}! 👋</h2>
+            <p style="font-size: 15px; opacity: 0.9; line-height: 1.5;">Alfa Academy o'quv markazidagi shaxsiy sahifangiz. Bu yerda siz o'zlashtirish baholaringiz, darslarga qatnashish davomatingiz, faol testlar va to'lov holatingizni kuzatib borasiz.</p>
+            <div style="margin-top: 16px; display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                <i class="fa-solid fa-graduation-cap"></i> Guruhingiz: {{ student.group.name }}
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon icon-attendance">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Davomat ko'rsatkichi</h3>
+                    <p class="stat-number">{{ my_att_rate }}%</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-grade">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>O'rtacha baho</h3>
+                    <p class="stat-number">{{ my_avg_grade }}</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon {% if payment_status == "To'langan" %}icon-students{% else %}icon-groups{% endif %}" style="{% if payment_status == "To'langan" %}background-color: var(--accent-green-light); color: var(--accent-green);{% else %}background-color: var(--accent-red-light); color: var(--accent-red);{% endif %}">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>To'lov (Ushbu oy)</h3>
+                    <p class="stat-number" style="font-size: 15px; margin-top: 4px; color: {% if payment_status == "To'langan" %}var(--accent-green){% else %}var(--accent-red){% endif %};">
+                        {{ payment_status }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Grid: Active Tests, Recent Grades, and Leaderboard -->
+        <div class="dashboard-grid" style="grid-template-columns: 1.1fr 0.9fr; margin-top: 24px;">
+            <!-- Active Exams/Tests -->
+            <div class="dashboard-card">
+                <div class="card-header-simple">
+                    <h2><i class="fa-solid fa-file-invoice"></i> Mening Imtihonlarim (Faol testlar)</h2>
+                    <a href="{% url 'test_list' %}" class="view-all-link">Barchasi <i class="fa-solid fa-chevron-right"></i></a>
+                </div>
+                <div class="card-body">
+                    {% if test_items %}
+                        <div class="recent-grades-list" style="margin-top: 10px;">
+                            {% for item in test_items %}
+                            <div class="recent-grade-item">
+                                <div class="grade-student-info">
+                                    <span class="student-name">{{ item.test.title }}</span>
+                                    <span class="student-group">
+                                        {% if item.test.test_type == 'MCQ' %}Test (A,B,C){% else %}Yozma ish{% endif %}
+                                    </span>
+                                </div>
+                                <div>
+                                    {% if item.status == 'not_started' %}
+                                        <a href="{% url 'take_test' item.test.id %}" class="btn btn-primary" style="padding: 6px 12px; font-size: 11px; border-radius: 4px; text-decoration: none;">Boshlash</a>
+                                    {% elif item.status == 'started' %}
+                                        <a href="{% url 'take_test' item.test.id %}" class="btn btn-warning" style="padding: 6px 12px; font-size: 11px; border-radius: 4px; text-decoration: none; color: white;">Davom etish</a>
+                                    {% elif item.status == 'disqualified' %}
+                                        <span class="badge-count" style="background-color: #fef2f2; color: #b91c1c; font-size: 11px;">Chetlashtirilgan</span>
+                                    {% else %}
+                                        <span class="badge-count" style="background-color: var(--accent-green-light); color: var(--accent-green); font-size: 11px;">
+                                            {% if item.score is not None %}{{ item.score|floatformat:0 }}%{% else %}Topshirildi{% endif %}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted" style="text-align: center; font-size: 13px; padding: 20px 0;">Guruhingizda hozircha faol testlar yo'q.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Leaderboard (O'quvchilar Reytingi) -->
+            <div class="dashboard-card">
+                <div class="card-header-simple">
+                    <h2><i class="fa-solid fa-trophy" style="color: #facc15; margin-right: 6px;"></i> O'quvchilar Reytingi (Top 5)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="leaderboard-mini-list">
+                        {% if leaderboard %}
+                            {% for entry in leaderboard %}
+                            <div class="leaderboard-mini-item">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="rank {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-other{% endif %}">
+                                        {{ forloop.counter }}
+                                    </span>
+                                    <div>
+                                        <strong style="font-size: 13px;">{{ entry.student.first_name }} {{ entry.student.last_name }}</strong>
+                                        <span style="display: block; font-size: 10px; color: var(--text-muted);">{{ entry.student.group.name }}</span>
+                                    </div>
+                                </div>
+                                <strong style="color: var(--secondary-color); font-size: 13px;">{{ entry.avg_grade }} <i class="fa-solid fa-star" style="color: #facc15; font-size: 10px;"></i></strong>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted" style="text-align: center; font-size: 12px; margin-top: 20px;">Reyting ma'lumotlari mavjud emas.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Grades -->
+        <div class="dashboard-card card-recent-grades" style="margin-top: 24px;">
+            <div class="card-header-simple">
+                <h2>Oxirgi olgan baholaringiz</h2>
+                <i class="fa-solid fa-award" style="font-size: 20px; color: var(--accent-yellow);"></i>
+            </div>
+            <div class="card-body">
+                {% if my_recent_grades %}
+                    <div class="recent-grades-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;">
+                        {% for g in my_recent_grades %}
+                        <div class="recent-grade-item" style="margin-bottom: 0;">
+                            <div class="grade-student-info">
+                                <span class="student-name">{{ g.get_grade_type_display }}</span>
+                                <span class="student-group"><i class="fa-solid fa-calendar-day"></i> {{ g.date|date:"d-M" }}</span>
+                            </div>
+                            <div class="grade-badge-wrap">
+                                {% if g.comment %}
+                                <i class="fa-solid fa-comment-dots text-success" title="{{ g.comment }}" style="font-size: 16px; cursor: help;"></i>
+                                {% endif %}
+                                <span class="grade-score-circle score-{{ g.grade }}">{{ g.grade }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fa-solid fa-star"></i>
+                        <p>Hozircha sizga baholar qo'yilmagan.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-state-large" style="padding: 80px 40px; margin-top: 40px;">
+            <i class="fa-solid fa-circle-exclamation" style="color: var(--accent-red); font-size: 56px; opacity: 1;"></i>
+            <h2 style="margin-top: 16px;">Akkauntingiz faollashtirilmagan</h2>
+            <p style="max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">Profilingiz administrator tomonidan faollashtirilishini kuting.</p>
+        </div>
+    {% endif %}
+{% endif %}
+
+{% endblock %}

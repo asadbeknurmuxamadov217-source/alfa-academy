@@ -1,0 +1,197 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Natijalar va Sertifikatlar{% endblock %}
+
+{% block active_payments %}active{% endblock %} <!-- highlighting payments/wallet link for consistency, or we can add menu item -->
+{% block active_groups %}active{% endblock %}
+{% block active_t_groups %}active{% endblock %}
+{% block mob_active_groups %}active{% endblock %}
+{% block mob_active_t_groups %}active{% endblock %}
+
+{% block page_title %}Sertifikatlar va Imtihon Natijalari{% endblock %}
+
+{% block content %}
+<div class="groups-actions-row" style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <button class="btn btn-primary" onclick="openModal('uploadCertModal')">
+        <i class="fa-solid fa-file-upload"></i> Natija/Sertifikat Yuklash (PDF/Rasm)
+    </button>
+    <button class="btn" onclick="openModal('generateCertModal')" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-weight: 800; border: none; border-radius: 12px; padding: 10px 18px;">
+        <i class="fa-solid fa-award"></i> 🎓 Avtomatik Sertifikat Generator (Chop Etish)
+    </button>
+</div>
+
+<div class="attendance-filter-card">
+    <form method="get" action="{% url 'certificates_list' %}" id="certFilterForm" class="filter-form">
+        <div class="filter-field" style="max-width: 300px;">
+            <label for="groupSelect"><i class="fa-solid fa-folder-tree"></i> Guruh bo'yicha saralash:</label>
+            <select name="group" id="groupSelect" onchange="this.form.submit()">
+                <option value="">Barcha guruhlar</option>
+                {% for group in groups %}
+                    <option value="{{ group.id }}" {% if selected_group_id == group.id %}selected{% endif %}>{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+</div>
+
+<!-- Certificates Table / Grid -->
+<div class="accordion-item" style="padding: 20px;">
+    {% if certificates %}
+        <div class="students-table-wrap">
+            <table class="students-table">
+                <thead>
+                    <tr>
+                        <th>O'quvchi</th>
+                        <th>Guruh</th>
+                        <th>Fan / Yo'nalish</th>
+                        <th>Natija / Sertifikat nomi</th>
+                        <th>Baho / Ball</th>
+                        <th>Yuklangan sana</th>
+                        <th>Fayl</th>
+                        <th class="actions-th">Harakat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cert in certificates %}
+                    <tr>
+                        <td class="student-name-td">
+                            <div class="student-avatar-small">
+                                {{ cert.student.first_name|slice:":1" }}{{ cert.student.last_name|slice:":1" }}
+                            </div>
+                            <span>{{ cert.student.first_name }} {{ cert.student.last_name }}</span>
+                        </td>
+                        <td>{{ cert.student.group.name }}</td>
+                        <td>
+                            <span class="badge-count" style="background-color: rgba(79, 70, 229, 0.15); color: #818cf8; font-weight: 800;">
+                                📘 {{ cert.subject|default:"Matematika" }}
+                            </span>
+                        </td>
+                        <td style="font-weight: 600;">{{ cert.title }}</td>
+                        <td>
+                            {% if cert.score %}
+                                <span class="badge-count" style="background-color: var(--accent-green-light); color: var(--accent-green);">
+                                    {{ cert.score }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ cert.created_at|date:"d-M, Y" }}</td>
+                        <td>
+                            <a href="{{ cert.file.url }}" target="_blank" class="phone-link" style="color: var(--primary-color);">
+                                {% if ".pdf" in cert.file.name|lower %}
+                                    <i class="fa-solid fa-file-pdf"></i> PDF faylni ko'rish
+                                {% else %}
+                                    <i class="fa-solid fa-file-image"></i> Rasmni ko'rish
+                                {% endif %}
+                            </a>
+                        </td>
+                        <td class="student-actions">
+                            <form action="{% url 'delete_certificate' cert.id %}" method="post" class="inline-form" onsubmit="return confirm('Sertifikat/Natija faylini o\'chirishni tasdiqlaysizmi?')">
+                                {% csrf_token %}
+                                <button type="submit" class="action-btn delete-btn">
+                                    <i class="fa-solid fa-trash"></i> O'chirish
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="group-empty-state">
+            <i class="fa-solid fa-file-excel" style="font-size: 40px; opacity: 0.5; display: block; margin-bottom: 12px;"></i>
+            <p>Hozircha hech qanday sertifikat yoki imtihon natijalari yuklanmagan.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- Upload Certificate Modal -->
+<div id="uploadCertModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>Natija yoki Sertifikat Yuklash</h2>
+            <span class="close-btn" onclick="closeModal('uploadCertModal')">&times;</span>
+        </div>
+        <form action="{% url 'upload_certificate' %}" method="post" enctype="multipart/form-data" class="modal-form">
+            {% csrf_token %}
+            
+            <!-- Lupachali O'quvchilar Qidiruv oynasi -->
+            <div class="form-field">
+                <label for="student_search_input"><i class="fa-solid fa-magnifying-glass" style="color: var(--primary-color);"></i> O'quvchini Qidirish va Tanlash:</label>
+                <div style="position: relative;">
+                    <input type="text" 
+                           id="student_search_input" 
+                           placeholder="🔎 O'quvchi ismi yoki familiyasini yozing..." 
+                           onkeyup="filterStudentList()"
+                           style="width: 100%; padding: 12px 14px 12px 38px; border-radius: 12px; border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.8); color: white; font-size: 14px;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 14px; color: var(--text-gray);"></i>
+                </div>
+            </div>
+
+            <div class="form-field">
+                <label for="cert_student">Tanlangan O'quvchi:</label>
+                <select id="cert_student" name="student" required style="size: 5; border-radius: 12px; padding: 8px;">
+                    <option value="" disabled selected>Ro'yxatdan o'quvchini tanlang</option>
+                    {% for student in students %}
+                        <option value="{{ student.id }}" data-search="{{ student.first_name|lower }} {{ student.last_name|lower }}">
+                            {{ student.first_name }} {{ student.last_name }} ({{ student.group.name }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-field">
+                <label for="cert_subject">Fan yoki Yo'nalish nomi (Alohida guruhlanadi):</label>
+                <input type="text" id="cert_subject" name="subject" required placeholder="Masalan: Matematika, Fizika, IELTS, Tarix" value="Matematika">
+            </div>
+
+            <div class="form-field">
+                <label for="cert_title">Natija / Sertifikat nomi:</label>
+                <input type="text" id="cert_title" name="title" required placeholder="Masalan: Milliy Sertifikat, Yakuniy Imtihon">
+            </div>
+            
+            <div class="form-field">
+                <label for="cert_score">Ball / Natija (ixtiyoriy):</label>
+                <input type="text" id="cert_score" name="score" placeholder="Masalan: 95 ball, IELTS 7.5, A+ Grade">
+            </div>
+            
+            <div class="form-field">
+                <label for="cert_file">Rasm yoki PDF fayli:</label>
+                <input type="file" id="cert_file" name="file" accept="image/*,application/pdf" required>
+            </div>
+            
+            <div class="form-actions-modal">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('uploadCertModal')">Bekor qilish</button>
+                <button type="submit" class="btn btn-submit">Yuklash</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function filterStudentList() {
+        const input = document.getElementById('student_search_input').value.toLowerCase().trim();
+        const select = document.getElementById('cert_student');
+        const options = select.options;
+
+        let firstMatch = null;
+        for (let i = 0; i < options.length; i++) {
+            if (i === 0) continue;
+            const searchData = options[i].getAttribute('data-search') || options[i].text.toLowerCase();
+            if (searchData.includes(input)) {
+                options[i].style.display = '';
+                if (!firstMatch) firstMatch = options[i];
+            } else {
+                options[i].style.display = 'none';
+            }
+        }
+        if (firstMatch && input.length > 0) {
+            firstMatch.selected = true;
+        }
+    }
+</script>
+{% endblock %}

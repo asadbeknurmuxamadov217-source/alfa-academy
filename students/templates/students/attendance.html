@@ -1,0 +1,792 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Oylik Davomat Tizimi{% endblock %}
+
+{% block active_attendance %}active{% endblock %}
+{% block mob_active_attendance %}active{% endblock %}
+
+{% block page_title %}Zamonaviy Oylik Davomat Tizimi{% endblock %}
+
+{% block content %}
+<style>
+    .matrix-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        padding: 12px;
+        margin-top: 14px;
+    }
+
+    .matrix-scroll-wrap {
+        width: 100%;
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        scrollbar-width: thin;
+        scrollbar-color: #818cf8 var(--card-bg);
+    }
+
+    /* Custom Visible Scrollbar */
+    .matrix-scroll-wrap::-webkit-scrollbar {
+        height: 10px;
+    }
+    .matrix-scroll-wrap::-webkit-scrollbar-track {
+        background: var(--bg-color);
+    }
+    .matrix-scroll-wrap::-webkit-scrollbar-thumb {
+        background: #818cf8;
+        border-radius: 6px;
+    }
+
+    .matrix-table {
+        min-width: 1600px !important; /* Ensures full 31 days and total statistics column are 100% visible */
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 12px;
+        width: 100%;
+    }
+
+    .matrix-table th, .matrix-table td {
+        border-bottom: 1px solid var(--border-color);
+        border-right: 1px solid var(--border-color) !important; /* Clear vertical column separation */
+        text-align: center;
+        padding: 6px 4px;
+        white-space: nowrap;
+    }
+
+    .sticky-name-col {
+        position: sticky;
+        left: 0;
+        background: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        z-index: 30 !important;
+        text-align: left !important;
+        padding-left: 12px !important;
+        min-width: 220px !important;
+        width: 220px !important;
+        box-shadow: 5px 0 14px rgba(0,0,0,0.15);
+    }
+
+    th.sticky-name-col {
+        z-index: 40 !important;
+        background: var(--bg-color) !important;
+    }
+
+    .day-th {
+        min-width: 38px !important;
+        width: 38px !important;
+        padding: 6px 2px !important;
+    }
+
+    .day-name-txt {
+        font-size: 10px;
+        color: var(--text-gray);
+        display: block;
+        font-weight: 700;
+    }
+
+    .day-date-txt {
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--text-color);
+    }
+
+    .today-highlight {
+        background: rgba(79, 70, 229, 0.2) !important;
+        border: 2px solid var(--primary-color) !important;
+    }
+
+    .weekend-highlight {
+        background: rgba(239, 68, 68, 0.1) !important;
+        color: #ef4444 !important;
+    }
+
+    /* Attendance Cell Buttons */
+    .att-btn {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        border: 1px dashed var(--border-color);
+        background: transparent;
+        font-weight: 800;
+        font-size: 11px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.15s ease;
+        padding: 0;
+    }
+
+    .att-btn:hover {
+        transform: scale(1.18);
+    }
+
+    .st-P { background: #10b981 !important; color: white !important; border: none !important; }
+    .st-A { background: #ef4444 !important; color: white !important; border: none !important; }
+    .st-L { background: #f59e0b !important; color: white !important; border: none !important; }
+    .st-E { background: #8b5cf6 !important; color: white !important; border: none !important; }
+</style>
+
+<!-- Filters Header with Month Navigation Buttons -->
+<div class="attendance-filter-card">
+    <form method="get" action="{% url 'attendance' %}" id="attendanceFilterForm" class="filter-form" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
+        <div class="filter-field" style="flex: 1; min-width: 200px;">
+            <label for="groupSelect"><i class="fa-solid fa-folder-tree"></i> Guruhni tanlang:</label>
+            <select name="group" id="groupSelect" required onchange="this.form.submit()">
+                <option value="" disabled {% if not selected_group_id %}selected{% endif %}>Guruhni tanlang</option>
+                {% for group in groups %}
+                    <option value="{{ group.id }}" {% if selected_group_id == group.id %}selected{% endif %}>{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-field" style="flex: 1; min-width: 200px;">
+            <label for="monthInput"><i class="fa-solid fa-calendar-days"></i> Oyni tanlang:</label>
+            <div style="display: flex; gap: 6px; align-items: center;">
+                <a href="{% url 'attendance' %}?group={{ selected_group_id }}&month={{ prev_month }}" class="btn" style="padding: 8px 12px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 800; border-radius: 8px; text-decoration: none;">
+                    <i class="fa-solid fa-chevron-left"></i> O'tgan oy
+                </a>
+
+                <input type="month" name="month" id="monthInput" value="{{ selected_month }}" onchange="this.form.submit()" style="padding: 8px 12px;">
+
+                <a href="{% url 'attendance' %}?group={{ selected_group_id }}&month={{ next_month }}" class="btn" style="padding: 8px 12px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 800; border-radius: 8px; text-decoration: none;">
+                    Keyingi oy <i class="fa-solid fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Excel Export -->
+<div class="attendance-filter-card" style="margin-top: 14px; border: 1px solid rgba(16, 185, 129, 0.3);">
+    <form method="get" action="{% url 'export_student_attendance_excel' %}" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 280px;">
+            <i class="fa-solid fa-file-excel" style="color: #10b981; font-size: 24px;"></i>
+            <div style="flex: 1;">
+                <label style="font-size: 13px; font-weight: 700; display: block; margin-bottom: 4px;">O'quvchi Davomat Hisobotini Excel (.csv) Yuklash:</label>
+                <input type="text" name="q" placeholder="O'quvchi ismi, familiyasi yoki loginini kiriting..." required style="width: 100%; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 13px; font-weight: 600;">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success" style="padding: 10px 20px; border-radius: 8px; font-weight: 700; background-color: #10b981; border: none; font-size: 13px; white-space: nowrap; cursor: pointer;">
+            <i class="fa-solid fa-download" style="margin-right: 6px;"></i> Excel Yuklash
+        </button>
+    </form>
+</div>
+
+<!-- Indicators Legend & Group Monthly Overview Cards -->
+{% if selected_group_id %}
+    <!-- Group Monthly Overview Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 16px;">
+        <div style="background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-gray); display: block; text-transform: uppercase;">✓ Jami Keldi:</span>
+                <span style="font-size: 22px; font-weight: 900; color: #10b981;">{{ group_total_present }}</span>
+            </div>
+            <i class="fa-solid fa-circle-check" style="font-size: 26px; color: #10b981; opacity: 0.3;"></i>
+        </div>
+
+        <div style="background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.3); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-gray); display: block; text-transform: uppercase;">✗ Jami Kelmadi:</span>
+                <span style="font-size: 22px; font-weight: 900; color: #ef4444;">{{ group_total_absent }}</span>
+            </div>
+            <i class="fa-solid fa-circle-xmark" style="font-size: 26px; color: #ef4444; opacity: 0.3;"></i>
+        </div>
+
+        <div style="background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-gray); display: block; text-transform: uppercase;">🕒 Jami Kechikdi:</span>
+                <span style="font-size: 22px; font-weight: 900; color: #f59e0b;">{{ group_total_late }}</span>
+            </div>
+            <i class="fa-solid fa-clock" style="font-size: 26px; color: #f59e0b; opacity: 0.3;"></i>
+        </div>
+
+        <div style="background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.3); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-gray); display: block; text-transform: uppercase;">💬 Jami Sababli:</span>
+                <span style="font-size: 22px; font-weight: 900; color: #8b5cf6;">{{ group_total_excused }}</span>
+            </div>
+            <i class="fa-solid fa-comment-dots" style="font-size: 26px; color: #8b5cf6; opacity: 0.3;"></i>
+        </div>
+
+        <div style="background: var(--card-bg); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.3); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-gray); display: block; text-transform: uppercase;">📈 Guruh O'rtacha (%):</span>
+                <span style="font-size: 22px; font-weight: 900; color: #6366f1;">{{ group_avg_percent }}%</span>
+            </div>
+            <i class="fa-solid fa-chart-line" style="font-size: 26px; color: #6366f1; opacity: 0.3;"></i>
+        </div>
+    </div>
+
+    <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Status Badges -->
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <span style="font-size: 12px; font-weight: 800; color: var(--text-gray);">Belgilar ma'nosi:</span>
+            <span style="padding: 4px 10px; border-radius: 6px; background: #10b981; color: white; font-weight: 800; font-size: 12px;">✓ Keldi</span>
+            <span style="padding: 4px 10px; border-radius: 6px; background: #ef4444; color: white; font-weight: 800; font-size: 12px;">✗ Kelmadi</span>
+            <span style="padding: 4px 10px; border-radius: 6px; background: #f59e0b; color: white; font-weight: 800; font-size: 12px;">🕒 Kechikdi</span>
+            <span style="padding: 4px 10px; border-radius: 6px; background: #8b5cf6; color: white; font-weight: 800; font-size: 12px;">💬 Sababli</span>
+        </div>
+
+        <!-- Prominent Scroll Control Buttons Panel & Save Today Button -->
+        <div style="display: flex; gap: 10px; align-items: center; background: rgba(129, 140, 248, 0.1); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 12px; flex-wrap: wrap;">
+            <span style="font-size: 13px; font-weight: 800; color: var(--text-color); flex: 1; min-width: 200px;">
+                <i class="fa-solid fa-arrows-left-right"></i> Jadvalni surish va oxirini ko'rish:
+            </span>
+            <button type="button" onclick="scrollMatrix(-400)" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); font-weight: 800; font-size: 13px; cursor: pointer;">
+                <i class="fa-solid fa-chevron-left"></i> Chapga
+            </button>
+            <button type="button" onclick="scrollMatrix(400)" style="padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-color); font-weight: 800; font-size: 13px; cursor: pointer;">
+                O'ngga <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <button type="button" onclick="scrollMatrixEnd()" style="padding: 8px 16px; border-radius: 8px; border: none; background: #6366f1; color: white; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);">
+                Oxiriga (Bugunga) ⏭️
+            </button>
+
+            <!-- Save Today Attendance Button -->
+            <button type="button" onclick="confirmSaveTodayAttendance()" style="padding: 8px 18px; border-radius: 8px; border: none; background: #10b981; color: white; font-weight: 900; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); margin-left: 6px;">
+                <i class="fa-solid fa-floppy-disk"></i> Bugungi Davomatni Saqlash va Tasdiqlash 💾
+            </button>
+        </div>
+    </div>
+
+    {% if students_matrix %}
+        <div class="matrix-card">
+            <div class="matrix-scroll-wrap" id="matrixWrap">
+                <table class="matrix-table">
+                    <thead>
+                        <tr>
+                            <th class="sticky-name-col">O'quvchi Ismi va Familiyasi</th>
+                            {% for mday in month_days %}
+                                <th class="day-th {% if mday.day_name == 'Yak' or mday.day_name == 'Shn' %}weekend-highlight{% endif %} {% if mday.is_today %}today-highlight{% endif %}">
+                                    <span class="day-name-txt">{{ mday.day_name }}</span>
+                                    <span class="day-date-txt">{{ mday.formatted_date }}</span>
+                                </th>
+                            {% endfor %}
+                            <th style="min-width: 60px; color: #10b981; font-weight: 800;">✓ Keldi</th>
+                            <th style="min-width: 60px; color: #ef4444; font-weight: 800;">✗ Kelmadi</th>
+                            <th style="min-width: 60px; color: #f59e0b; font-weight: 800;">🕒 Kechikdi</th>
+                            <th style="min-width: 60px; color: #8b5cf6; font-weight: 800;">💬 Sababli</th>
+                            <th style="min-width: 70px; color: #6366f1; font-weight: 800;">% Foiz</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in students_matrix %}
+                        <tr>
+                            <td class="sticky-name-col">
+                                <div style="display: flex; align-items: center; gap: 10px; cursor: pointer;" onclick="openStudentDetailsModal('{{ row.student.id }}')">
+                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; flex-shrink: 0;">
+                                        {{ row.student.first_name|slice:":1" }}{{ row.student.last_name|slice:":1" }}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 800; font-size: 13px; color: var(--primary-color); text-decoration: underline;">{{ row.student.first_name }} {{ row.student.last_name }}</div>
+                                        <div style="font-size: 11px; color: var(--text-gray);">{{ row.student.phone|default:"Tel kiritilmagan" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {% for d in row.days %}
+                                <td>
+                                    <button type="button" 
+                                            class="att-btn st-{{ d.status }}" 
+                                            id="abtn_{{ row.student.id }}_{{ d.date_str }}" 
+                                            data-student="{{ row.student.id }}" 
+                                            data-date="{{ d.date_str }}" 
+                                            data-status="{{ d.status }}"
+                                            data-comment="{{ d.comment }}"
+                                            title="{% if d.comment %}Izoh: {{ d.comment }}{% endif %}"
+                                            onclick="openStatusMenu(event, this)">
+                                        {% if d.status == 'P' %}✓
+                                        {% elif d.status == 'A' %}✗
+                                        {% elif d.status == 'L' %}🕒
+                                        {% elif d.status == 'E' %}💬
+                                        {% else %}+
+                                        {% endif %}
+                                    </button>
+                                </td>
+                            {% endfor %}
+
+                            <td style="font-weight: 800; color: #10b981;">{{ row.present_cnt }}</td>
+                            <td style="font-weight: 800; color: #ef4444;">{{ row.absent_cnt }}</td>
+                            <td style="font-weight: 800; color: #f59e0b;">{{ row.late_cnt }}</td>
+                            <td style="font-weight: 800; color: #8b5cf6;">{{ row.excused_cnt }}</td>
+                            <td style="font-weight: 800; color: #6366f1;">{{ row.percent }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-state-large" style="margin-top: 30px;">
+            <i class="fa-solid fa-users-slash"></i>
+            <h2>Bu guruhda o'quvchilar topilmadi</h2>
+        </div>
+    {% endif %}
+{% endif %}
+
+<!-- Status Selection Floating Menu -->
+<div id="attendanceStatusMenu" style="display: none; position: fixed; z-index: 999999; background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); gap: 6px; flex-direction: column; min-width: 150px;">
+    <button onclick="selectStatus('P')" style="padding: 8px 12px; border-radius: 8px; border: none; background: #10b981; color: white; font-weight: 800; font-size: 13px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-circle-check"></i> ✓ Keldi
+    </button>
+    <button onclick="selectStatus('A')" style="padding: 8px 12px; border-radius: 8px; border: none; background: #ef4444; color: white; font-weight: 800; font-size: 13px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-circle-xmark"></i> ✗ Kelmadi
+    </button>
+    <button onclick="selectStatus('L')" style="padding: 8px 12px; border-radius: 8px; border: none; background: #f59e0b; color: white; font-weight: 800; font-size: 13px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-clock"></i> 🕒 Kechikdi
+    </button>
+    <button onclick="selectStatus('E')" style="padding: 8px 12px; border-radius: 8px; border: none; background: #8b5cf6; color: white; font-weight: 800; font-size: 13px; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-comment-dots"></i> 💬 Sababli
+    </button>
+    <hr style="border: none; border-top: 1px solid #334155; margin: 4px 0;">
+    <button onclick="selectStatus('')" style="padding: 6px 12px; border-radius: 8px; border: none; background: rgba(255,255,255,0.1); color: #94a3b8; font-weight: 700; font-size: 12px; cursor: pointer; text-align: left;">
+        ❌ Tozalash
+    </button>
+</div>
+
+<!-- Modal 1: Sababli / Izoh yozish kiritish oynasi (SOLID NON-TRANSPARENT BACKGROUND) -->
+<div id="commentModal" style="display: none; position: fixed; z-index: 999999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+    <div style="background: #0f172a; border-radius: 16px; border: 1px solid #334155; padding: 24px; width: 90%; max-width: 440px; box-shadow: 0 25px 50px rgba(0,0,0,0.9); color: #ffffff;">
+        <h3 style="margin-top: 0; font-size: 16px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-pen-to-square" style="color: #8b5cf6;"></i> Sababi yoki Izohni Kiriting (Ixtiyoriy):
+        </h3>
+        <textarea id="commentInput" rows="3" placeholder="Masalan: Kasal bo'lib qolgani sababli kelmadi..." style="width: 100%; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #ffffff; padding: 12px; font-size: 13px; margin-top: 12px; outline: none; box-sizing: border-box;"></textarea>
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px;">
+            <button type="button" id="skipCommentBtn" onclick="closeCommentModal()" style="padding: 10px 18px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #cbd5e1; font-weight: 700; font-size: 13px; cursor: pointer;">
+                O'tkazib yuborish
+            </button>
+            <button type="button" id="saveCommentBtn" onclick="saveStatusWithComment()" style="padding: 10px 22px; border-radius: 8px; border: none; background: #8b5cf6; color: white; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);">
+                Saqlash
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: O'quvchi 1 Oylik Davomat Batafsil Kartochkasi (SOLID NON-TRANSPARENT BACKGROUND) -->
+<div id="studentDetailsModal" style="display: none; position: fixed; z-index: 999999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center;">
+    <div style="background: #0f172a; border-radius: 16px; border: 1px solid #334155; padding: 24px; width: 90%; max-width: 640px; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 50px rgba(0,0,0,0.9); color: #ffffff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 12px; margin-bottom: 16px;">
+            <div>
+                <h2 id="modalStudentName" style="margin: 0; font-size: 18px; font-weight: 900; color: #ffffff;">O'quvchi Ismi</h2>
+                <span id="modalGroupMonth" style="font-size: 12px; color: #94a3b8; font-weight: 700;">Guruh | Oy</span>
+            </div>
+            <button type="button" onclick="closeStudentDetailsModal()" style="background: transparent; border: none; font-size: 22px; color: #94a3b8; cursor: pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div id="modalDetailsContent">
+            <!-- Dynamic Details Content -->
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeCellBtn = null;
+    let pendingStatus = null;
+
+    function toggleAttendanceStatus(btn) {
+        activeCellBtn = btn;
+        const currentStatus = btn.getAttribute('data-status') || '';
+        let nextStatus = '';
+
+        if (!currentStatus || currentStatus === '' || currentStatus === 'null') {
+            nextStatus = 'P'; // 1-click: Keldi (Green)
+        } else if (currentStatus === 'P') {
+            nextStatus = 'A'; // 2-click: Kelmadi (Red)
+        } else if (currentStatus === 'A') {
+            nextStatus = 'L'; // 3-click: Kechikdi (Yellow)
+        } else if (currentStatus === 'L') {
+            nextStatus = 'E'; // 4-click: Sababli (Purple)
+        } else {
+            nextStatus = '';  // 5-click: Reset to '+'
+        }
+
+        sendAttendanceSave(nextStatus, btn.getAttribute('data-comment') || '');
+    }
+
+    function openStatusMenu(e, btn) {
+        e.stopPropagation();
+        activeCellBtn = btn;
+        const menu = document.getElementById('attendanceStatusMenu');
+        
+        const rect = btn.getBoundingClientRect();
+        // Since menu has position: fixed, we use viewport coordinates directly (without window.scrollY)
+        menu.style.top = (rect.bottom + 4) + 'px';
+        menu.style.left = Math.max(10, (rect.left - 40)) + 'px';
+        menu.style.display = 'flex';
+    }
+
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('attendanceStatusMenu');
+        if (menu && !menu.contains(e.target)) {
+            menu.style.display = 'none';
+        }
+    });
+
+    function selectStatus(status) {
+        if (!activeCellBtn) return;
+        document.getElementById('attendanceStatusMenu').style.display = 'none';
+
+        pendingStatus = status;
+
+        if (status === 'E' || status === 'A' || status === 'L') {
+            const existingComment = activeCellBtn.getAttribute('data-comment') || '';
+            document.getElementById('commentInput').value = existingComment;
+            document.getElementById('commentModal').style.display = 'flex';
+            document.getElementById('commentInput').focus();
+        } else {
+            sendAttendanceSave(status, '');
+        }
+    }
+
+    function closeCommentModal() {
+        document.getElementById('commentModal').style.display = 'none';
+        const existingComment = activeCellBtn ? (activeCellBtn.getAttribute('data-comment') || '') : '';
+        sendAttendanceSave(pendingStatus, existingComment);
+    }
+
+    function saveStatusWithComment() {
+        const commentInput = document.getElementById('commentInput');
+        const comment = commentInput ? commentInput.value.trim() : '';
+        document.getElementById('commentModal').style.display = 'none';
+        sendAttendanceSave(pendingStatus, comment);
+    }
+
+    function sendAttendanceSave(status, comment) {
+        if (!activeCellBtn) return;
+
+        const studentId = activeCellBtn.getAttribute('data-student');
+        const dateStr = activeCellBtn.getAttribute('data-date');
+
+        activeCellBtn.setAttribute('data-status', status);
+        activeCellBtn.setAttribute('data-comment', comment);
+        activeCellBtn.setAttribute('title', comment ? 'Izoh: ' + comment : '');
+        activeCellBtn.className = 'att-btn st-' + status;
+        
+        let label = '+';
+        if (status === 'P') label = '✓';
+        else if (status === 'A') label = '✗';
+        else if (status === 'L') label = '🕒';
+        else if (status === 'E') label = '💬';
+
+        activeCellBtn.innerText = label;
+
+        fetch("{% url 'save_attendance' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                date: dateStr,
+                status: status,
+                comment: comment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' || data.status === 'deleted') {
+                showToast("Davomat saqlandi!", "success");
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Saqlashda tarmoq xatoligi!", "error");
+        });
+    }
+
+    // Live statistics recalculation for row and group
+    function recalculateRowAndGroupStats(trRow) {
+        const buttons = trRow.querySelectorAll('.att-btn');
+        let pCnt = 0, aCnt = 0, lCnt = 0, eCnt = 0;
+
+        buttons.forEach(btn => {
+            const st = btn.getAttribute('data-status');
+            if (st === 'P') pCnt++;
+            else if (st === 'A') aCnt++;
+            else if (st === 'L') lCnt++;
+            else if (st === 'E') eCnt++;
+        });
+
+        const total = pCnt + aCnt + lCnt + eCnt;
+        const percent = total > 0 ? Math.round((pCnt / total) * 100) : 100;
+
+        const cells = trRow.children;
+        const totalCols = cells.length;
+        if (totalCols >= 6) {
+            cells[totalCols - 5].innerText = pCnt;
+            cells[totalCols - 4].innerText = aCnt;
+            cells[totalCols - 3].innerText = lCnt;
+            cells[totalCols - 2].innerText = eCnt;
+            cells[totalCols - 1].innerText = percent + '%';
+        }
+
+        // Recalculate group top cards
+        let gP = 0, gA = 0, gL = 0, gE = 0;
+        document.querySelectorAll('.matrix-table tbody tr').forEach(row => {
+            const rButtons = row.querySelectorAll('.att-btn');
+            rButtons.forEach(b => {
+                const st = b.getAttribute('data-status');
+                if (st === 'P') gP++;
+                else if (st === 'A') gA++;
+                else if (st === 'L') gL++;
+                else if (st === 'E') gE++;
+            });
+        });
+
+        const gTotal = gP + gA + gL + gE;
+        const gAvg = gTotal > 0 ? Math.round((gP / gTotal) * 100) : 100;
+
+        // Update cards if exist
+        const cards = document.querySelectorAll('span[style*="font-size: 22px"]');
+        if (cards.length >= 5) {
+            cards[0].innerText = gP;
+            cards[1].innerText = gA;
+            cards[2].innerText = gL;
+            cards[3].innerText = gE;
+            cards[4].innerText = gAvg + '%';
+        }
+    }
+
+    let globalStudentDetailsData = null;
+
+    // Modal 2: O'quvchi xususiy 1 oylik davomat ma'lumotlarini yuklash
+    function openStudentDetailsModal(studentId) {
+        const modal = document.getElementById('studentDetailsModal');
+        const contentDiv = document.getElementById('modalDetailsContent');
+
+        modal.style.display = 'flex';
+        contentDiv.innerHTML = '<div style="text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: #818cf8;"></i><p style="margin-top: 10px; font-weight: 700;">Davomat ma\'lumotlari yuklanmoqda...</p></div>';
+
+        // Collect all attendance directly from current table DOM to match screen 100%
+        const present_list = [];
+        const absent_list = [];
+        const late_list = [];
+        const excused_list = [];
+        let studentName = 'O\'quvchi';
+
+        const trRow = document.querySelector(`.matrix-table tbody tr button[data-student="${studentId}"]`)?.closest('tr');
+        if (trRow) {
+            const nameCell = trRow.querySelector('td div[style*="font-weight: 800"]');
+            if (nameCell) studentName = nameCell.innerText.trim();
+
+            const buttons = trRow.querySelectorAll('.att-btn');
+            buttons.forEach(btn => {
+                const st = btn.getAttribute('data-status');
+                const rawDate = btn.getAttribute('data-date'); // YYYY-MM-DD
+                const comment = btn.getAttribute('data-comment') || '';
+                
+                if (st && rawDate) {
+                    const parts = rawDate.split('-');
+                    const formattedDate = parts.length === 3 ? `${parts[2]}.${parts[1]}.${parts[0]}` : rawDate;
+                    const item = { date: formattedDate, comment: comment };
+
+                    if (st === 'P') present_list.push(item);
+                    else if (st === 'A') absent_list.push(item);
+                    else if (st === 'L') late_list.push(item);
+                    else if (st === 'E') excused_list.push(item);
+                }
+            });
+        }
+
+        const tot = present_list.length + absent_list.length + late_list.length + excused_list.length;
+        const percent = tot > 0 ? Math.round((present_list.length / tot) * 100) : 100;
+
+        globalStudentDetailsData = {
+            student_name: studentName,
+            group_name: "{{ group.name|default:'Guruh' }}",
+            month_str: "{{ selected_month|default:'' }}",
+            percent: percent,
+            present_list: present_list,
+            absent_list: absent_list,
+            late_list: late_list,
+            excused_list: excused_list
+        };
+
+        document.getElementById('modalStudentName').innerText = globalStudentDetailsData.student_name;
+        document.getElementById('modalGroupMonth').innerText = `Davomat: ${percent}%`;
+        renderTabbedStudentDetails('all');
+    }
+
+    function renderTabbedStudentDetails(activeTab) {
+        const contentDiv = document.getElementById('modalDetailsContent');
+        if (!globalStudentDetailsData) return;
+
+        const data = globalStudentDetailsData;
+
+        // Combine all items sorted by date
+        const allRecords = [];
+
+        (data.present_list || []).forEach(x => allRecords.push({ date: x.date, status: 'P', statusText: '✓ Keldi', color: '#10b981', comment: x.comment }));
+        (data.absent_list || []).forEach(x => allRecords.push({ date: x.date, status: 'A', statusText: '✗ Kelmadi', color: '#ef4444', comment: x.comment }));
+        (data.late_list || []).forEach(x => allRecords.push({ date: x.date, status: 'L', statusText: '🕒 Kechikdi', color: '#f59e0b', comment: x.comment }));
+        (data.excused_list || []).forEach(x => allRecords.push({ date: x.date, status: 'E', statusText: '💬 Sababli', color: '#8b5cf6', comment: x.comment }));
+
+        // Sort by date dd.mm.yyyy
+        allRecords.sort((a, b) => {
+            const pA = a.date.split('.').reverse().join('');
+            const pB = b.date.split('.').reverse().join('');
+            return pA.localeCompare(pB);
+        });
+
+        if (allRecords.length === 0) {
+            contentDiv.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 14px;">Ushbu oy uchun hali davomat ma\'lumotlari kiritilmagan.</div>';
+            return;
+        }
+
+        let html = `
+            <!-- Monthly Attendance History Table -->
+            <div style="overflow-x: auto; background: #0f172a; border-radius: 12px; border: 1px solid #334155;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                    <thead>
+                        <tr style="background: rgba(255,255,255,0.05); border-bottom: 1px solid #334155; color: #94a3b8; font-weight: 700;">
+                            <th style="padding: 12px 16px; width: 120px;">Sana</th>
+                            <th style="padding: 12px 16px; width: 140px;">Davomat Holati</th>
+                            <th style="padding: 12px 16px;">Izoh / Kommentariya</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        allRecords.forEach(rec => {
+            html += `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 12px 16px; font-weight: 800; color: #f8fafc;">
+                        <i class="fa-regular fa-calendar" style="margin-right: 6px; color: #64748b;"></i>${rec.date}
+                    </td>
+                    <td style="padding: 12px 16px;">
+                        <span style="background: ${rec.color}; color: white; padding: 4px 10px; border-radius: 6px; font-weight: 800; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                            ${rec.statusText}
+                        </span>
+                    </td>
+                    <td style="padding: 12px 16px; color: ${rec.comment ? '#e2e8f0' : '#64748b'}; font-weight: ${rec.comment ? '600' : '400'};">
+                        ${rec.comment ? `<i class="fa-solid fa-comment-dots" style="margin-right: 6px; color: #818cf8;"></i>"${rec.comment}"` : '<i>Izoh kiritilmagan</i>'}
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        contentDiv.innerHTML = html;
+    }
+
+    function closeStudentDetailsModal() {
+        document.getElementById('studentDetailsModal').style.display = 'none';
+    }
+
+    function confirmSaveTodayAttendance() {
+        const btn = document.getElementById('saveAttendanceMainBtn') || (event ? event.target.closest('button') : null);
+        if (btn) {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Barcha davomat saqlanmoqda...';
+            btn.disabled = true;
+        }
+
+        // Collect all marked attendance buttons in the current matrix table
+        const buttons = document.querySelectorAll('.att-btn[data-status]');
+        const promises = [];
+
+        buttons.forEach(b => {
+            const st = b.getAttribute('data-status');
+            const studentId = b.getAttribute('data-student');
+            const dateStr = b.getAttribute('data-date');
+            const comment = b.getAttribute('data-comment') || '';
+
+            if (st && st !== '' && st !== 'null' && studentId && dateStr) {
+                promises.push(
+                    fetch("{% url 'save_attendance' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            student_id: studentId,
+                            date: dateStr,
+                            status: st,
+                            comment: comment
+                        })
+                    })
+                );
+            }
+        });
+
+        Promise.all(promises).then(() => {
+            showToast("Barcha Davomatlar Muvaffaqiyatli Saqlandi!", "success");
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-check-circle"></i> Barcha Davomatlar Saqlandi va Tasdiqlandi! ✅';
+                btn.style.background = '#059669';
+            }
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+        }).catch(err => {
+            console.error("Batch save error:", err);
+            showToast("Saqlashda xatolik yuz berdi!", "error");
+            if (btn) btn.disabled = false;
+        });
+    }
+
+    function scrollMatrix(amount) {
+        const wrap = document.getElementById('matrixWrap');
+        if (wrap) {
+            wrap.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+    }
+
+    function scrollMatrixEnd() {
+        const wrap = document.getElementById('matrixWrap');
+        if (wrap) {
+            wrap.scrollTo({ left: wrap.scrollWidth, behavior: 'smooth' });
+        }
+    }
+
+    // Touch & Mouse Drag-to-Scroll
+    document.addEventListener('DOMContentLoaded', function() {
+        const slider = document.getElementById('matrixWrap');
+        if (!slider) return;
+
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        slider.style.cursor = 'grab';
+
+        slider.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.att-btn') || e.target.closest('#attendanceStatusMenu')) return;
+            isDown = true;
+            slider.style.cursor = 'grabbing';
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        });
+
+        slider.addEventListener('mouseleave', () => {
+            isDown = false;
+            slider.style.cursor = 'grab';
+        });
+
+        slider.addEventListener('mouseup', () => {
+            isDown = false;
+            slider.style.cursor = 'grab';
+        });
+
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 1.5;
+            slider.scrollLeft = scrollLeft - walk;
+        });
+    });
+</script>
+{% endblock %}

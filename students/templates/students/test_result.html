@@ -1,0 +1,95 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Test Natijasi — {{ test.title }}{% endblock %}
+
+{% block active_certs %}active{% endblock %}
+
+{% block page_title %}Test Natijasi Tafsilotlari{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto 0 auto;">
+    <div class="accordion-item" style="padding: 40px; text-align: center;">
+        
+        {% if submission.status == 'disqualified' %}
+            <i class="fa-solid fa-user-slash" style="font-size: 56px; color: #ef4444; margin-bottom: 24px;"></i>
+            <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 12px; color: #ef4444;">Imtihondan Chetlashtirildingiz!</h2>
+            <p style="color: var(--text-gray); font-size: 14px; line-height: 1.6; margin-bottom: 30px;">
+                Siz ushbu test jarayonida anti-cheat qoidalarini buzgansiz (boshqa oynaga/tabga o'tgansiz yoki oynani kichraytirgansiz). Tizim buni aniqlab, testni yakunladi va ballingiz 0 deb belgilandi. Xabar o'qituvchiga yuborildi.
+            </p>
+        {% else %}
+            {% if submission.score is not None %}
+                <i class="fa-solid fa-square-poll-vertical" style="font-size: 56px; color: var(--accent-green); margin-bottom: 24px;"></i>
+                <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 12px;">Test Muvaffaqiyatli Topshirildi!</h2>
+                <div style="margin: 20px 0 30px 0;">
+                    <span style="font-size: 14px; color: var(--text-gray); font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 6px;">Sizning Ballingiz:</span>
+                    <span style="font-size: 48px; font-weight: 800; color: var(--accent-green);">{{ submission.score|floatformat:0 }}%</span>
+                </div>
+                <p style="color: var(--text-gray); font-size: 14px; line-height: 1.6; margin-bottom: 30px;">
+                    Javoblaringiz qabul qilindi va baho avtomatik ravishda dars jurnalingizga kiritildi. Keyingi o'quv faoliyatlaringizda muvaffaqiyatlar tilaymiz!
+                </p>
+            {% else %}
+                <i class="fa-solid fa-hourglass-half" style="font-size: 56px; color: var(--accent-yellow); margin-bottom: 24px;"></i>
+                <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 12px;">Yozma Ish Tekshirilmoqda</h2>
+                <p style="color: var(--text-gray); font-size: 14px; line-height: 1.6; margin-bottom: 30px;">
+                    Sizning yozma javoblaringiz qabul qilindi. O'qituvchi ishingizni tekshirib chiqqach, ballingiz va bahongiz kabinetingizda ko'rsatiladi. Iltimos, sabr qiling.
+                </p>
+            {% endif %}
+        {% endif %}
+        
+        {% if submission.status != 'disqualified' and submission.score is not None %}
+            <div style="margin-top: 30px; text-align: left; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px;">
+                <h4 style="font-size: 16px; font-weight: 800; margin-bottom: 14px; color: var(--primary-color); display: flex; justify-content: space-between; align-items: center;">
+                    <span>📋 Har Bir Savol Bo'yicha Tahlil:</span>
+                    <span style="font-size: 14px; color: #34d399; font-weight: 800;">To'g'ri: {{ correct_count }}/{{ total_questions }}</span>
+                </h4>
+                
+                {% if question_details %}
+                <div style="max-height: 300px; overflow-y: auto; padding-right: 6px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-gray);">
+                                <th style="padding: 8px;"># Savol</th>
+                                <th style="padding: 8px;">Sizning Javobingiz</th>
+                                <th style="padding: 8px;">To'g'ri Kalit</th>
+                                <th style="padding: 8px; text-align: center;">Natija</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for q in question_details %}
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td style="padding: 8px; font-weight: 800;">{{ q.num }}-savol</td>
+                                <td style="padding: 8px; font-weight: 700;">{{ q.user_ans }}</td>
+                                <td style="padding: 8px; color: #34d399; font-weight: 700;">{{ q.correct_key }}</td>
+                                <td style="padding: 8px; text-align: center;">
+                                    {% if q.is_correct %}
+                                        <span style="color: #34d399; font-weight: 900; font-size: 16px;">✅ To'g'ri</span>
+                                    {% else %}
+                                        <span style="color: #ef4444; font-weight: 900; font-size: 16px;">❌ Xato</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div style="font-size: 13px; font-weight: 600; word-break: break-all; color: var(--text-light); line-height: 1.8;">
+                    <strong>Sizning javoblaringiz:</strong> {{ submission.student_answers|default:"Javob berilmagan" }}
+                </div>
+                {% if test.answers_key %}
+                <div style="font-size: 13px; font-weight: 700; word-break: break-all; color: #34d399; line-height: 1.8; margin-top: 6px;">
+                    <strong>To'g'ri Kalit:</strong> {{ test.answers_key }}
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div style="margin-top: 30px;">
+            <a href="{% url 'test_list' %}" class="btn btn-primary" style="width: 100%; padding: 14px; border-radius: 12px; font-weight: 800; text-decoration: none; display: inline-block;">
+                <i class="fa-solid fa-arrow-left" style="margin-right: 6px;"></i> Testlar Ro'yxatiga Qaytish
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

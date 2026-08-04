@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tizimga Kirish — ALFA Academy</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom styling -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.05) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 80%, rgba(13, 148, 136, 0.05) 0%, transparent 40%),
+                        var(--bg-body);
+            padding: 20px;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 440px;
+            background-color: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .login-header {
+            background-color: var(--sidebar-bg);
+            color: white;
+            padding: 40px 32px 30px 32px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .login-header .logo {
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .login-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -0.3px;
+        }
+        
+        .login-header p {
+            color: var(--sidebar-text);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+        
+        .login-body {
+            padding: 32px;
+        }
+        
+        .error-alert {
+            background-color: var(--accent-red-light);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .login-form .form-field {
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .input-group i {
+            position: absolute;
+            left: 14px;
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 14px 14px 14px 44px;
+            font-size: 14px;
+            border-radius: var(--radius-md);
+        }
+        
+        .login-btn {
+            width: 100%;
+            justify-content: center;
+            padding: 14px;
+            font-size: 15px;
+            margin-top: 10px;
+            border-radius: var(--radius-md);
+        }
+        
+        .login-footer {
+            text-align: center;
+            padding: 20px 32px 32px 32px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo" style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 16px;">
+                <img src="{% static 'images/alfa_clean_logo.png' %}?v=3" alt="ALFA Logo" style="width: 42px; height: 42px; object-fit: contain;">
+                <span class="logo-text" style="font-size: 24px; font-weight: 800; letter-spacing: 1px;">ALFA</span>
+            </div>
+            <h2>Tizimga Xush Kelibsiz!</h2>
+            <p>O'z akkauntingiz orqali tizimga kiring</p>
+        </div>
+        
+        <div class="login-body">
+            {% if error_msg %}
+            <div class="error-alert">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{ error_msg }}</span>
+            </div>
+            {% endif %}
+            
+            <form method="post" class="login-form">
+                {% csrf_token %}
+                <div class="form-field">
+                    <label for="username">Foydalanuvchi nomi (Login):</label>
+                    <div class="input-group">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" id="username" name="username" required placeholder="Foydalanuvchi nomini kiriting" autofocus>
+                    </div>
+                </div>
+                
+                <div class="form-field">
+                    <label for="password">Maxfiy parol:</label>
+                    <div class="input-group">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="password" name="password" required placeholder="Parolni kiriting">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary login-btn">
+                    Tizimga kirish <i class="fa-solid fa-right-to-bracket"></i>
+                </button>
+            </form>
+        </div>
+        
+        <div class="login-footer">
+            &copy; 2026 ALFA Markazi Student Tracker Dashboard.
+        </div>
+    </div>
+
+</body>
+</html>

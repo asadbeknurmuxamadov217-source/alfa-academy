@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALFA Academy — Zamonaviy Bilimlar Akademiyasi</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <script>
+        function openCertificatesModal() {
+            var modal = document.getElementById('certificatesPublicModal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+        function closeCertificatesModal() {
+            var modal = document.getElementById('certificatesPublicModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+    
+    <style>
+        :root {
+            --space-bg: #0b0f19;
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-light: #f8fafc;
+            --text-gray: #94a3b8;
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --primary-glow: radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, transparent 60%);
+        }
+
+        body.light-mode {
+            --space-bg: #f8fafc;
+            --glass-bg: #ffffff;
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --text-light: #0f172a;
+            --text-gray: #475569;
+            --card-bg: #ffffff;
+            background-color: #f1f5f9 !important;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(13, 148, 136, 0.08) 0%, transparent 45%) !important;
+            color: #0f172a !important;
+        }
+
+        body.light-mode .landing-header {
+            background: rgba(255, 255, 255, 0.85) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+            backdrop-filter: blur(12px);
+        }
+
+        body.light-mode .leaderboard-card,
+        body.light-mode .app-form-card,
+        body.light-mode .search-card,
+        body.light-mode .student-report-card,
+        body.light-mode .certificate-card-public {
+            background-color: #ffffff !important;
+            border-color: rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06) !important;
+            color: #0f172a !important;
+        }
+
+        body.light-mode .leaderboard-item {
+            background-color: #f8fafc !important;
+            border-color: rgba(0, 0, 0, 0.06) !important;
+            color: #0f172a !important;
+        }
+
+        body.light-mode .form-field-landing input,
+        body.light-mode .form-field-landing select {
+            background-color: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+        }
+
+        body.light-mode .hero-title-main {
+            background: linear-gradient(135deg, #0f172a 40%, #4338ca 100%) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+        }
+
+        body.public-body {
+            background-color: var(--space-bg);
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(13, 148, 136, 0.1) 0%, transparent 45%);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        /* Star Overlay */
+        .stars-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: 
+                radial-gradient(1px 1px at 20px 30px, #eee, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 70px 100px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1.5px 1.5px at 140px 190px, #fff, rgba(0,0,0,0)),
+                radial-gradient(1px 1px at 250px 80px, #ddd, rgba(0,0,0,0)),
+                radial-gradient(2px 2px at 380px 290px, #fff, rgba(0,0,0,0));
+            background-repeat: repeat;
+            background-size: 500px 500px;
+            opacity: 0.35;
+            z-index: 1;
+        }
+
+        .landing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 40px;
+            border-bottom: 1px solid var(--glass-border);
+            backdrop-filter: blur(16px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: rgba(11, 15, 25, 0.7);
+        }
+
+        .landing-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .landing-logo-img {
+            height: 44px;
+            width: auto;
+            border-radius: var(--radius-sm);
+        }
+
+        .landing-logo-text {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-light);
+            letter-spacing: -0.5px;
+        }
+
+        .landing-logo-text span {
+            color: #ef4444;
+        }
+
+        .landing-nav {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+        }
+
+        .landing-nav-link {
+            color: var(--text-gray);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .landing-nav-link:hover {
+            color: var(--text-light);
+        }
+
+        /* Full Screen Section Layout */
+        .hero-section {
+            min-height: calc(100vh - 80px);
+            padding: 40px;
+            max-width: 1240px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 40px;
+            position: relative;
+            z-index: 2;
+            scroll-snap-align: start;
+        }
+
+        .hero-content {
+            flex: 1.2;
+        }
+
+        /* Pure 3D Interactive Logo Styles */
+        .logo-3d-wrapper {
+            perspective: 1000px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logo-3d-card {
+            width: 360px;
+            height: 360px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+            transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+            animation: logoFloat3D 5s ease-in-out infinite;
+        }
+
+        .logo-3d-img {
+            width: 320px;
+            height: auto;
+            object-fit: contain;
+            transform: translateZ(40px);
+            filter: drop-shadow(0 15px 25px rgba(239, 68, 68, 0.4));
+        }
+
+        @keyframes logoFloat3D {
+            0%, 100% {
+                transform: translateY(0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+            }
+            50% {
+                transform: translateY(-22px) rotateX(12deg) rotateY(-12deg) rotateZ(2deg);
+            }
+        }
+
+        @keyframes pulseGlow {
+            0% { opacity: 0.6; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        @keyframes ringRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes ringRotateReverse {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+
+        .hero-badge {
+            background-color: rgba(79, 70, 229, 0.15);
+            border: 1px solid rgba(79, 70, 229, 0.3);
+            color: #a5b4fc;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .hero-title-main {
+            font-size: 48px;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc-main {
+            color: var(--text-gray);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 36px;
+            max-width: 580px;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* Courses grid styling */
+        .section-wrap {
+            max-width: 1240px;
+            min-height: 85vh;
+            margin: 0 auto;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            z-index: 2;
+            scroll-snap-align: start;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .section-header h2 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .section-header p {
+            color: var(--text-gray);
+            font-size: 15px;
+        }
+
+        .courses-grid-landing {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        .course-card-landing {
+            background-color: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 30px;
+            backdrop-filter: blur(12px);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 240px;
+        }
+
+        .course-card-landing:hover {
+            transform: translateY(-5px);
+            border-color: rgba(79, 70, 229, 0.3);
+            box-shadow: 0 16px 32px rgba(79, 70, 229, 0.08);
+        }
+
+        .course-icon-box {
+            width: 56px;
+            height: 56px;
+            background: rgba(79, 70, 229, 0.1);
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            color: #818cf8;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .course-card-landing h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .course-card-landing p {
+            color: var(--text-gray);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Leaderboard and Application split */
+        .split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        /* Application Form ("O'qimoqchiman") */
+        .app-form-card {
+            background-color: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .form-field-landing {
+            margin-bottom: 20px;
+        }
+
+        .form-field-landing label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-gray);
+        }
+
+        .form-field-landing input, .form-field-landing select {
+            width: 100%;
+            background-color: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            color: var(--text-light);
+            font-size: 14px;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-field-landing input:focus, .form-field-landing select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        .form-submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 14px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .form-submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
+        }
+
+        /* Leaderboard styling */
+        .leaderboard-card {
+            background-color: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            backdrop-filter: blur(12px);
+        }
+
+        .leaderboard-list {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(15, 23, 42, 0.3);
+            border: 1px solid var(--glass-border);
+            padding: 12px 18px;
+            border-radius: var(--radius-md);
+            transition: var(--transition);
+        }
+
+        .leaderboard-item:hover {
+            border-color: rgba(13, 148, 136, 0.2);
+            background-color: rgba(15, 23, 42, 0.5);
+        }
+
+        .leaderboard-rank {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .rank-1 { background-color: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.4); }
+        .rank-2 { background-color: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.4); }
+        .rank-3 { background-color: rgba(180, 83, 9, 0.2); color: #fb923c; border: 1px solid rgba(180, 83, 9, 0.4); }
+        .rank-other { background-color: rgba(255, 255, 255, 0.05); color: var(--text-gray); }
+
+        .leaderboard-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            margin-left: 16px;
+        }
+
+        .leaderboard-name {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .leaderboard-group {
+            font-size: 11px;
+            color: var(--text-gray);
+            margin-top: 2px;
+        }
+
+        .leaderboard-score {
+            font-weight: 800;
+            font-size: 14px;
+            color: var(--secondary-color);
+        }
+
+        /* Results / Search */
+        .search-wrap-landing {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .toast-success {
+            background-color: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+        }
+
+        /* Footer */
+        .site-footer-public {
+            margin-top: auto;
+            padding: 30px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-gray);
+            border-top: 1px solid var(--glass-border);
+            z-index: 2;
+        }
+
+        @media(max-width: 992px) {
+            .hero-section {
+                flex-direction: column;
+                text-align: center;
+                padding-top: 40px;
+            }
+            .hero-desc-main {
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .hero-actions {
+                justify-content: center;
+            }
+            .hero-visual {
+                display: none;
+            }
+            .split-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="public-body">
+
+    <div class="stars-overlay"></div>
+
+    <!-- Navigation Header -->
+    <header class="landing-header">
+        <a href="{% url 'landing_page' %}" class="landing-logo">
+            <img src="{% static 'images/alfa_clean_logo.png' %}?v=3" alt="ALFA Logo" class="landing-logo-img" style="width: 38px; height: 38px; object-fit: contain;">
+            <span class="landing-logo-text" style="font-size: 22px; font-weight: 800; letter-spacing: 1px;">ALFA</span>
+        </a>
+        
+        <nav class="landing-nav">
+            <!-- Theme Toggle Button (Oq/Qora Rejim) -->
+            <button type="button" id="themeToggleBtn" 
+                    onclick="if(document.body.classList.contains('light-mode')){ document.body.classList.remove('light-mode'); this.querySelector('i').className='fa-solid fa-moon'; this.querySelector('span').innerText='Qora'; localStorage.setItem('alfa_theme','dark'); }else{ document.body.classList.add('light-mode'); this.querySelector('i').className='fa-solid fa-sun'; this.querySelector('span').innerText='Oq'; localStorage.setItem('alfa_theme','light'); }" 
+                    style="background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border); color: #facc15; padding: 8px 16px; border-radius: 30px; cursor: pointer; font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s ease;">
+                <i class="fa-solid fa-moon" id="themeIcon"></i> <span id="themeText">Qora</span>
+            </button>
+
+            <a href="#leaderboard" class="landing-nav-link" style="color: #facc15; font-weight: 700;"><i class="fa-solid fa-trophy"></i> O'quvchilar Reytingi</a>
+            <a href="javascript:void(0)" onclick="openCertificatesModal()" class="landing-nav-link" style="color: #34d399; font-weight: 700;"><i class="fa-solid fa-award"></i> Sertifikatlar</a>
+            <a href="#results" class="landing-nav-link"><i class="fa-solid fa-magnifying-glass"></i> Natijalar</a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'dashboard' %}" target="_blank" class="btn btn-primary" style="padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: 700;">
+                    <i class="fa-solid fa-chart-line"></i> Kabinet
+                </a>
+            {% else %}
+                <a href="{% url 'login' %}" target="_blank" class="btn btn-success" style="padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: 700; background-color: var(--primary-color); border-color: var(--primary-color);">
+                    <i class="fa-solid fa-right-to-bracket"></i> Kirish
+                </a>
+            {% endif %}
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title-main">Kelajak Bilimlarini ALFA Bilan Egallang</h1>
+            <!-- Paragraph removed as requested -->
+            <div class="hero-actions">
+                <a href="#apply" class="btn btn-primary" style="padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 15px;">
+                    <i class="fa-solid fa-paper-plane"></i> Ro'yxatdan O'tish
+                </a>
+                <a href="#results" class="btn btn-cancel" style="padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 15px; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--glass-border);">
+                    <i class="fa-solid fa-search"></i> Natijani Tekshirish
+                </a>
+            </div>
+        </div>
+        
+        <div class="hero-visual">
+            <!-- Pure 3D Interactive ALFA Logo without any background or circles -->
+            <div class="logo-3d-wrapper" id="logo3dWrapper">
+                <div class="logo-3d-card" id="logo3dCard">
+                    <img src="{% static 'images/alfa_clean_logo.png' %}?v=3" alt="ALFA Logo" class="logo-3d-img">
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- 1-BO'LIM: O'quvchilar Reytingi (Top) -->
+    <section class="section-wrap" id="leaderboard" style="min-height: 90vh; padding-top: 100px; margin-bottom: 80px;">
+        <div class="leaderboard-card" style="background-color: var(--glass-bg); border: 1px solid var(--glass-border); padding: 44px 48px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 16px;">
+                <h3 style="font-size: 26px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 12px;">
+                    <i class="fa-solid fa-trophy" style="color: #facc15; font-size: 28px;"></i> O'quvchilar Reytingi
+                </h3>
+                
+                <!-- Weekly / Monthly Rating Filters -->
+                <div style="display: inline-flex; background: rgba(255, 255, 255, 0.08); padding: 6px; border-radius: 24px; border: 1px solid var(--glass-border);">
+                    <button type="button" id="btnWeekly" 
+                            onclick="document.getElementById('weeklyRatingList').style.display='block'; document.getElementById('monthlyRatingList').style.display='none'; this.style.background='var(--primary-color)'; this.style.color='white'; document.getElementById('btnMonthly').style.background='transparent'; document.getElementById('btnMonthly').style.color='var(--text-gray)';" 
+                            style="padding: 8px 22px; border-radius: 18px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; background: var(--primary-color); color: white; transition: all 0.2s ease;">
+                        <i class="fa-solid fa-calendar-week"></i> Haftalik
+                    </button>
+                    <button type="button" id="btnMonthly" 
+                            onclick="document.getElementById('weeklyRatingList').style.display='none'; document.getElementById('monthlyRatingList').style.display='block'; this.style.background='var(--primary-color)'; this.style.color='white'; document.getElementById('btnWeekly').style.background='transparent'; document.getElementById('btnWeekly').style.color='var(--text-gray)';" 
+                            style="padding: 8px 22px; border-radius: 18px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; background: transparent; color: var(--text-gray); transition: all 0.2s ease;">
+                        <i class="fa-solid fa-calendar-days"></i> Oylik
+                    </button>
+                </div>
+            </div>
+            
+            <p style="color: var(--text-gray); font-size: 15px; margin-bottom: 30px;">
+                O'zlashtirish va dars ko'rsatkichlari bo'yicha eng top o'quvchilar ro'yxati
+            </p>
+            
+            <!-- Weekly Rating List -->
+            <div id="weeklyRatingList" class="leaderboard-list" style="display: flex; flex-direction: column; gap: 16px;">
+                {% if top_students %}
+                    {% for entry in top_students %}
+                    <div class="leaderboard-item" style="padding: 16px 24px; border-radius: 14px;">
+                        <div class="leaderboard-rank 
+                            {% if forloop.counter == 1 %}rank-1
+                            {% elif forloop.counter == 2 %}rank-2
+                            {% elif forloop.counter == 3 %}rank-3
+                            {% else %}rank-other{% endif %}" style="width: 36px; height: 36px; font-size: 16px;">
+                            {{ forloop.counter }}
+                        </div>
+                        <div class="leaderboard-user">
+                            <div>
+                                <div class="leaderboard-name" style="font-size: 16px; font-weight: 700;">{{ entry.student.first_name }} {{ entry.student.last_name }}</div>
+                                <div class="leaderboard-group" style="font-size: 13px;">{{ entry.student.group.name }}</div>
+                            </div>
+                        </div>
+                        <div class="leaderboard-score" style="font-size: 17px; font-weight: 800;">
+                            {{ entry.avg_grade }} <i class="fa-solid fa-star" style="color: #facc15; font-size: 14px; margin-left: 4px;"></i>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="text-align: center; color: var(--text-gray); font-size: 14px; padding: 40px 0;">Hozircha haftalik reyting ma'lumotlari mavjud emas.</p>
+                {% endif %}
+            </div>
+
+            <!-- Monthly Rating List -->
+            <div id="monthlyRatingList" class="leaderboard-list" style="display: none; flex-direction: column; gap: 16px;">
+                {% if top_students %}
+                    {% for entry in top_students %}
+                    <div class="leaderboard-item" style="padding: 16px 24px; border-radius: 14px;">
+                        <div class="leaderboard-rank 
+                            {% if forloop.counter == 1 %}rank-1
+                            {% elif forloop.counter == 2 %}rank-2
+                            {% elif forloop.counter == 3 %}rank-3
+                            {% else %}rank-other{% endif %}" style="width: 36px; height: 36px; font-size: 16px;">
+                            {{ forloop.counter }}
+                        </div>
+                        <div class="leaderboard-user">
+                            <div>
+                                <div class="leaderboard-name" style="font-size: 16px; font-weight: 700;">{{ entry.student.first_name }} {{ entry.student.last_name }}</div>
+                                <div class="leaderboard-group" style="font-size: 13px;">{{ entry.student.group.name }} (Oylik Natija)</div>
+                            </div>
+                        </div>
+                        <div class="leaderboard-score" style="font-size: 17px; font-weight: 800;">
+                            {{ entry.avg_grade }} <i class="fa-solid fa-star" style="color: #facc15; font-size: 14px; margin-left: 4px;"></i>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="text-align: center; color: var(--text-gray); font-size: 14px; padding: 40px 0;">Hozircha oylik reyting ma'lumotlari mavjud emas.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- 2-BO'LIM: Imtihon va Uy Vazifalari Natijalarini Tekshirish -->
+    <section class="section-wrap" id="results" style="min-height: 90vh; padding-top: 100px; margin-bottom: 80px;">
+        <div class="section-header" style="margin-bottom: 48px; text-align: center;">
+            <h2 style="font-size: 34px; font-weight: 800; display: inline-flex; align-items: center; gap: 12px;">
+                <i class="fa-solid fa-square-poll-vertical" style="color: var(--primary-color);"></i> Imtihon va Uy Vazifalari Natijalarini Tekshirish
+            </h2>
+            <p style="font-size: 16px; margin-top: 8px; color: var(--text-gray);">O'quvchining imtihon testlari natijalari va darsdagi o'zlashtirish baholarini ochiq qidirish sahifasi</p>
+        </div>
+        
+        <div class="search-wrap-landing" style="max-width: 780px; margin: 0 auto 50px auto;">
+            <div class="search-card" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); padding: 14px 18px; border-radius: 50px; backdrop-filter: blur(16px); box-shadow: 0 15px 40px rgba(0,0,0,0.3);">
+                <form method="get" action="{% url 'landing_page' %}#results" style="display: flex; align-items: center; gap: 16px; width: 100%;">
+                    <div style="display: flex; align-items: center; gap: 14px; flex: 1; padding-left: 16px;">
+                        <i class="fa-solid fa-magnifying-glass" style="color: var(--primary-color); font-size: 18px;"></i>
+                        <input type="text" 
+                               name="q" 
+                               value="{{ q }}" 
+                               required 
+                               placeholder="O'quvchi ismi, familiyasi yoki telefon raqamini kiritib qidiring..."
+                               style="width: 100%; background: transparent; border: none; outline: none; color: white; font-size: 16px; font-weight: 500; font-family: inherit;">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="padding: 14px 32px; border-radius: 40px; font-size: 15px; font-weight: 700; background: linear-gradient(135deg, var(--primary-color), #6366f1); border: none; color: white; cursor: pointer; white-space: nowrap;">
+                        Natijani Ko'rish <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if q %}
+        <div style="margin-bottom: 50px;">
+            {% if student_report %}
+                <!-- Student General Stats Card -->
+                <div class="student-report-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); padding: 32px; border-radius: 24px; margin-bottom: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.2);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 24px;">
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div class="student-avatar-large" style="width: 68px; height: 68px; font-size: 24px; background: linear-gradient(135deg, var(--primary-color), #818cf8); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: white;">
+                                {{ student_report.student.first_name|slice:":1" }}{{ student_report.student.last_name|slice:":1" }}
+                            </div>
+                            <div>
+                                <h3 style="font-size: 24px; font-weight: 800; color: white;">{{ student_report.student.first_name }} {{ student_report.student.last_name }}</h3>
+                                <p style="color: var(--text-gray); font-size: 15px; margin-top: 4px;"><i class="fa-solid fa-users" style="color: #818cf8;"></i> Guruhi: <strong>{{ student_report.student.group.name }}</strong></p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 16px;">
+                            <div style="background-color: rgba(15, 23, 42, 0.6); padding: 16px 24px; border-radius: 16px; text-align: center; min-width: 140px; border: 1px solid var(--glass-border);">
+                                <span style="display: block; font-size: 11px; color: var(--text-gray); font-weight: 700; text-transform: uppercase;">Davomat Ko'rsatkich</span>
+                                <span style="font-size: 20px; font-weight: 800; color: #34d399;">{{ student_report.attendance_rate }}%</span>
+                            </div>
+                            <div style="background-color: rgba(15, 23, 42, 0.6); padding: 16px 24px; border-radius: 16px; text-align: center; min-width: 150px; border: 1px solid var(--glass-border);">
+                                <span style="display: block; font-size: 11px; color: var(--text-gray); font-weight: 700; text-transform: uppercase;">Topshirgan Testlari</span>
+                                <span style="font-size: 20px; font-weight: 800; color: #38bdf8;">{{ student_report.test_submissions|length }} ta</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- YAGONA TEST VA IMTIHON NATIJALARI BO'LIMI -->
+                <div>
+                    <h3 style="font-size: 22px; font-weight: 800; margin-bottom: 20px; color: white; display: flex; align-items: center; gap: 12px;">
+                        <i class="fa-solid fa-square-poll-vertical" style="color: #818cf8; font-size: 24px;"></i> Topshirgan Imtihon va Test Natijalari
+                    </h3>
+
+                    {% if student_report.test_submissions %}
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                            {% for sub in student_report.test_submissions %}
+                            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--glass-border); padding: 24px; border-radius: 22px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                                        <span style="font-size: 13px; color: var(--text-gray); font-weight: 600;"><i class="fa-solid fa-calendar-day"></i> {{ sub.submitted_at|date:"d-M Y, H:i" }}</span>
+                                        {% if sub.status == 'completed' %}
+                                            <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800;">Topshirildi</span>
+                                        {% elif sub.status == 'disqualified' %}
+                                            <span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800;">Chetlashtirildi</span>
+                                        {% else %}
+                                            <span style="background: rgba(250, 204, 21, 0.15); color: #facc15; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800;">Boshlangan</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <h4 style="font-size: 18px; font-weight: 800; color: white; margin-bottom: 16px;">{{ sub.test.title }}</h4>
+
+                                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 14px 18px; border-radius: 14px; margin-bottom: 12px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                            <span style="font-size: 13px; color: var(--text-gray); font-weight: 700;">To'g'ri javoblar:</span>
+                                            <strong style="font-size: 15px; color: #38bdf8; font-weight: 800;">{{ sub.correct_answers_count|default:0 }} ta / {{ sub.test.question_count|default:35 }} tadan</strong>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-size: 13px; color: var(--text-gray); font-weight: 700;">Natija Foizi:</span>
+                                            <strong style="font-size: 20px; font-weight: 900; color: {% if sub.score >= 70 %}#34d399{% elif sub.score >= 50 %}#facc15{% else %}#ef4444{% endif %};">
+                                                {{ sub.score|default:0 }}%
+                                            </strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p style="color: var(--text-gray); font-size: 14px; background: rgba(255,255,255,0.02); padding: 24px; border-radius: 16px; text-align: center;">Ushbu o'quvchi hali onlayn imtihon testlarini topshirmagan.</p>
+                    {% endif %}
+                </div>
+
+                </div>
+            {% else %}
+                <div class="empty-state-public" style="background-color: var(--glass-bg); border: 1px solid var(--glass-border); padding: 40px; border-radius: 20px; text-align: center;">
+                    <i class="fa-solid fa-magnifying-glass" style="font-size: 36px; color: var(--text-gray); margin-bottom: 12px;"></i>
+                    <h3 style="font-size: 18px; margin-top: 10px; color: white;">Natija topilmadi</h3>
+                    <p style="font-size: 14px; color: var(--text-gray);">Kiritilgan ism yoki telefon raqami bo'yicha o'quvchi ma'lumotlari topilmadi.</p>
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- 3-BO'LIM: Kursga Ariza Topshirish -->
+    <section class="section-wrap" id="apply" style="min-height: 90vh; padding-top: 100px; margin-bottom: 80px;">
+        <div class="app-form-card" style="max-width: 820px; margin: 0 auto; background-color: var(--glass-bg); border: 1px solid var(--glass-border); padding: 48px 56px; border-radius: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.35);">
+            <h3 style="font-size: 26px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 14px;">
+                <i class="fa-solid fa-user-plus" style="color: var(--primary-color); font-size: 28px;"></i> Kursga Ariza Topshirish
+            </h3>
+            <p style="color: var(--text-gray); font-size: 15px; margin-bottom: 32px;">
+                Ismingiz va telefon raqamingizni yozib ariza qoldiring. Administratorlarimiz siz bilan tez orada bog'lanishadi.
+            </p>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; padding: 16px 24px; border-radius: 16px; margin-bottom: 24px; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 12px;">
+                        <i class="fa-solid fa-circle-check" style="font-size: 20px;"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form id="leadSubmitForm" action="{% url 'submit_application' %}" method="post">
+                {% csrf_token %}
+                <div class="form-field-landing" style="margin-bottom: 24px;">
+                    <label for="lead_name" style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">F.I.O (Ism-Familiyangiz):</label>
+                    <input type="text" id="lead_name" name="name" required placeholder="Masalan: Jasur Eshonov" style="padding: 16px 20px; font-size: 15px; border-radius: 14px;">
+                </div>
+                
+                <div class="form-field-landing" style="margin-bottom: 24px;">
+                    <label for="lead_phone" style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Telefon raqamingiz:</label>
+                    <input type="text" id="lead_phone" name="phone" required placeholder="Masalan: +998901234567" style="padding: 16px 20px; font-size: 15px; border-radius: 14px;">
+                </div>
+                
+                <div class="form-field-landing" style="margin-bottom: 28px;">
+                    <label for="lead_course" style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Qiziqayotgan kursingiz:</label>
+                    <select id="lead_course" name="course" required style="padding: 16px 20px; font-size: 15px; border-radius: 14px; background-color: rgba(15, 23, 42, 0.9); color: white;">
+                        <option value="" disabled selected style="background-color: #0f172a; color: #94a3b8;">Kursni tanlang</option>
+                        {% for course in courses %}
+                            <option value="{{ course.id }}" style="background-color: #0f172a; color: white;">{{ course.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <button type="submit" class="form-submit-btn" style="padding: 18px; font-size: 16px; font-weight: 800; border-radius: 16px; margin-top: 10px;">
+                    <i class="fa-solid fa-paper-plane" style="margin-right: 8px;"></i> Murojaat qoldirish
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer-public">
+        &copy; 2026 ALFA Academy o'quv markazi. Barcha huquqlar himoyalangan.
+    </footer>
+
+    <!-- Certificates Public Gallery Modal -->
+    <div id="certificatesPublicModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;">
+        <div style="background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 28px; width: 100%; max-width: 900px; max-height: 85vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.5);">
+            <div style="padding: 24px 32px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02);">
+                <h3 style="margin: 0; font-size: 22px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px;">
+                    <i class="fa-solid fa-award" style="color: #34d399;"></i> Ustozlar Tomonidan Biriktirilgan Sertifikatlar
+                </h3>
+                <button onclick="closeCertificatesModal()" style="background: none; border: none; color: var(--text-gray); font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+
+            <div style="padding: 24px 32px; overflow-y: auto; max-height: calc(85vh - 80px); flex: 1;">
+                {% if certificates_by_subject %}
+                    {% for subj_name, cert_list in certificates_by_subject.items %}
+                    <div style="margin-bottom: 32px; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px;">
+                        <h3 style="font-size: 19px; font-weight: 800; color: #818cf8; margin-top: 0; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 12px;">
+                            <span><i class="fa-solid fa-graduation-cap" style="color: #34d399; margin-right: 8px;"></i> {{ subj_name }} Fanidan Sertifikatlar</span>
+                            <span style="font-size: 13px; font-weight: 700; background: rgba(129, 140, 248, 0.15); color: #818cf8; padding: 4px 10px; border-radius: 12px;">{{ cert_list|length }} ta sertifikat</span>
+                        </h3>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;">
+                            {% for cert in cert_list %}
+                            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); padding: 18px; border-radius: 16px; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                        {% if ".pdf" in cert.file.name|lower %}
+                                            <i class="fa-solid fa-file-pdf" style="color: #ef4444; font-size: 30px;"></i>
+                                        {% else %}
+                                            <i class="fa-solid fa-file-image" style="color: #38bdf8; font-size: 30px;"></i>
+                                        {% endif %}
+
+                                        {% if cert.score %}
+                                            <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 800;">Natija: {{ cert.score }}</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <h4 style="font-size: 16px; font-weight: 800; color: white; margin: 0 0 6px 0;">{{ cert.title }}</h4>
+                                    <p style="font-size: 13px; color: var(--text-light); margin: 0 0 4px 0; font-weight: 700;"><i class="fa-solid fa-user" style="color: #818cf8; margin-right: 4px;"></i> {{ cert.student.first_name }} {{ cert.student.last_name }}</p>
+                                    <p style="font-size: 11px; color: var(--text-gray); margin: 0 0 14px 0;"><i class="fa-solid fa-calendar-day"></i> {{ cert.created_at|date:"d-M Y" }}</p>
+                                </div>
+
+                                <a href="{{ cert.file.url }}" target="_blank" class="btn btn-primary" style="padding: 10px; font-size: 13px; font-weight: 700; border-radius: 10px; text-align: center; text-decoration: none; width: 100%; display: block; background: #4f46e5; color: white;">
+                                    <i class="fa-solid fa-eye"></i> Hujjatni ko'rish
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; padding: 40px; color: var(--text-gray);">
+                        <i class="fa-solid fa-award" style="font-size: 36px; margin-bottom: 12px; opacity: 0.5;"></i>
+                        <p>Hozircha tizimda yuklangan sertifikatlar mavjud emas.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Ajax submission -->
+    <script>
+        document.getElementById('leadSubmitForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const formData = new FormData(form);
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const toast = document.getElementById('formSuccessToast');
+                    toast.innerHTML = data.message + "<br><br><span style='font-size: 13px; font-weight: 500;'>Administrator bilan bog'lanish: <strong>+998 (90) 123-45-67</strong></span>";
+                    toast.style.display = 'block';
+                    form.reset();
+                    
+                    // Smooth scroll to top of card
+                    document.getElementById('apply').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
+            });
+        // 3D Interactive Tilt Effect for Hero Logo
+        const card = document.getElementById('logo3dCard');
+        const container = document.getElementById('logo3dWrapper');
+        
+        if (container && card) {
+            container.addEventListener('mousemove', (e) => {
+                const rect = container.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -25;
+                const rotateY = ((x - centerX) / centerX) * 25;
+                
+                card.style.animation = 'none';
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
+            });
+            
+            container.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+                setTimeout(() => {
+                    card.style.animation = 'logoFloat3D 6s ease-in-out infinite';
+                }, 300);
+            });
+        }
+
+        function filterCertBySubject(subjectName, btnElement) {
+            // Update active button styling
+            const buttons = document.querySelectorAll('.cert-tab-btn');
+            buttons.forEach(b => {
+                b.style.background = 'rgba(255,255,255,0.05)';
+                b.style.color = 'var(--text-gray)';
+                b.style.borderColor = 'var(--glass-border)';
+            });
+            if (btnElement) {
+                btnElement.style.background = 'var(--primary-color)';
+                btnElement.style.color = 'white';
+                btnElement.style.borderColor = 'var(--primary-color)';
+            }
+
+            // Filter cards
+            const cards = document.querySelectorAll('.cert-card-item');
+            cards.forEach(card => {
+                const cardSub = (card.getAttribute('data-subject') || '').toLowerCase();
+                if (subjectName === 'all' || cardSub.includes(subjectName.toLowerCase())) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Apply saved theme on page load
+        (function() {
+            const savedTheme = localStorage.getItem('alfa_theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                const themeIcon = document.getElementById('themeIcon');
+                const themeText = document.getElementById('themeText');
+                if (themeIcon) themeIcon.className = 'fa-solid fa-sun';
+                if (themeText) themeText.innerText = 'Oq';
+            }
+        })();
+    </script>
+</body>
+</html>

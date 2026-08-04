@@ -1,0 +1,621 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Test Topshirish — {{ test.title }}{% endblock %}
+
+{% block active_certs %}active{% endblock %}
+
+{% block page_title %}{{ test.title }}{% endblock %}
+
+{% block content %}
+<style>
+    .test-layout-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 30px;
+        align-items: start;
+        margin-top: 20px;
+    }
+
+    .questions-panel {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .questions-panel h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .file-viewer-wrap {
+        width: 100%;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+        background-color: #f1f5f9;
+        min-height: 500px;
+    }
+
+    .image-viewer {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        margin: 0 auto;
+    }
+
+    .answers-panel {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        position: sticky;
+        top: 100px;
+    }
+
+    .proctoring-warning-badge {
+        background-color: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        padding: 12px;
+        border-radius: var(--radius-md);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.5;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    /* MCQ input design */
+    .mcq-form-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 8px;
+        margin-bottom: 24px;
+    }
+
+    .mcq-question-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        padding: 10px 16px;
+        border-radius: var(--radius-md);
+    }
+
+    .mcq-question-item span.q-num {
+        font-weight: 800;
+        font-size: 14px;
+        width: 24px;
+        height: 24px;
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .mcq-options {
+        display: flex;
+        gap: 16px;
+        flex: 1;
+        justify-content: flex-end;
+    }
+
+    .option-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .option-label input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    /* Written input design */
+    .written-form-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .written-form-wrap textarea {
+        width: 100%;
+        min-height: 150px;
+        border: 1px solid var(--border-color);
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        border-radius: var(--radius-md);
+        padding: 14px;
+        font-size: 14px;
+        outline: none;
+        resize: vertical;
+    }
+
+    .written-form-wrap input[type="file"] {
+        border: 1px dashed var(--border-color);
+        padding: 16px;
+        border-radius: var(--radius-md);
+        background-color: var(--bg-color);
+        cursor: pointer;
+    }
+
+    .submit-exam-btn {
+        width: 100%;
+        background-color: var(--accent-green);
+        color: white;
+        padding: 14px;
+        border: none;
+        border-radius: var(--radius-md);
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: var(--transition);
+    }
+
+    .submit-exam-btn:hover {
+        background-color: #059669;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Disqualification Lock Screen */
+    .lock-screen-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(15, 23, 42, 0.98);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .lock-screen-box {
+        max-width: 500px;
+        background-color: #1e293b;
+        border: 1px solid #ef4444;
+        border-radius: var(--radius-lg);
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .lock-screen-box i {
+        font-size: 56px;
+        color: #ef4444;
+        margin-bottom: 20px;
+    }
+
+    .lock-screen-box h2 {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 12px;
+    }
+
+    .lock-screen-box p {
+        color: #94a3b8;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+
+    @media(max-width: 992px) {
+        .test-layout-grid {
+            grid-template-columns: 1fr;
+        }
+        .answers-panel {
+            position: static;
+        }
+    }
+</style>
+
+<div class="test-layout-grid">
+    
+    <!-- Left: Questions File Viewer -->
+    <div class="questions-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800;"><i class="fa-solid fa-file-lines"></i> Imtihon Savollari</h3>
+            <a href="{{ test.file.url }}" target="_blank" class="btn" style="font-size: 12px; padding: 6px 12px; border-radius: 8px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 700; text-decoration: none;">
+                <i class="fa-solid fa-up-right-from-square"></i> Alohida oynada ochish
+            </a>
+        </div>
+        
+        <div class="file-viewer-wrap" style="height: 650px; background: #1e293b; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-color); position: relative;">
+            {% if ".pdf" in test.file.name|lower %}
+                <!-- PDF.js Canvas Container -->
+                <div id="pdfCanvasContainer" style="width: 100%; height: 100%; overflow-y: auto; text-align: center; background: #0f172a; padding: 10px;">
+                    <div id="pdfLoadingText" style="color: #818cf8; font-size: 14px; font-weight: 700; margin-top: 40px;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Savollar PDF fayli yuklanmoqda...
+                    </div>
+                </div>
+
+                <!-- Fallback Iframe if Canvas fails -->
+                <iframe id="pdfFallbackIframe" src="{{ test.file.url }}" width="100%" height="100%" style="border: none; display: none;"></iframe>
+
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+                <script>
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    
+                    const pdfUrl = "{{ test.file.url }}";
+                    const container = document.getElementById('pdfCanvasContainer');
+
+                    pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
+                        document.getElementById('pdfLoadingText').style.display = 'none';
+                        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                            pdf.getPage(pageNum).then(page => {
+                                const scale = 1.3;
+                                const viewport = page.getViewport({ scale: scale });
+
+                                const canvas = document.createElement('canvas');
+                                canvas.style.marginBottom = '12px';
+                                canvas.style.borderRadius = '8px';
+                                canvas.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+                                canvas.style.maxWidth = '98%';
+
+                                const context = canvas.getContext('2d');
+                                canvas.height = viewport.height;
+                                canvas.width = viewport.width;
+
+                                container.appendChild(canvas);
+
+                                page.render({
+                                    canvasContext: context,
+                                    viewport: viewport
+                                });
+                            });
+                        }
+                    }).catch(err => {
+                        console.error("PDF.js render error, fallbacking to iframe:", err);
+                        container.style.display = 'none';
+                        document.getElementById('pdfFallbackIframe').style.display = 'block';
+                    });
+                </script>
+            {% else %}
+                <div style="width: 100%; height: 100%; overflow: auto; display: flex; align-items: center; justify-content: center; background: #0f172a;">
+                    <img src="{{ test.file.url }}" alt="Savollar rasmi" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Right: Answers Submission Form -->
+        <!-- Live Exam Timer Badge -->
+        <div style="background: rgba(245, 158, 11, 0.12); border: 2px solid #f59e0b; border-radius: 16px; padding: 14px 20px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <span style="font-size: 11px; font-weight: 800; color: #f59e0b; text-transform: uppercase; display: block;">⏱️ Imtihon Taymeri:</span>
+                <span style="font-size: 26px; font-weight: 900; color: #f59e0b; font-family: monospace;" id="timerDisplay">00:00:00</span>
+            </div>
+            <div style="text-align: right;">
+                <span style="font-size: 11px; color: var(--text-gray); display: block;">Ajratilgan vaqt:</span>
+                <span style="font-size: 14px; font-weight: 800; color: var(--text-light);">{{ duration_minutes }} daqiqa</span>
+            </div>
+        </div>
+
+        <!-- Proctoring Warning Badge -->
+        <div class="proctoring-warning-badge">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 16px; margin-top: 2px;"></i>
+            <div>
+                <strong>DIQQAT: Firgarlikka qarshi tizim (Proctoring) faol!</strong>
+                <p style="margin-top: 4px; font-weight: 500;">
+                    Ushbu test sahifasidan chiqib ketish (boshqa oynaga/tabga o'tish, brauzerni kichraytirish) taqiqlanadi! Qoidabuzarlik aniqlangan taqdirda, test avtomatik ravishda yakunlanadi va ball 0 ga tenglashtiriladi.
+                </p>
+            </div>
+        </div>
+        
+        <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--primary-color);">
+            <i class="fa-solid fa-list-check"></i> Test Javoblarini Belgilang
+        </h3>
+        
+        <form action="{% url 'submit_test' test.id %}" method="post" enctype="multipart/form-data" id="examSubmitForm">
+            {% csrf_token %}
+            
+            <div class="mcq-form-wrap" style="max-height: 480px; overflow-y: auto; padding-right: 8px; margin-bottom: 24px;">
+                
+                <!-- Variantli (MCQ) Savollar -->
+                {% if mcq_count > 0 %}
+                    <div style="font-size: 13px; font-weight: 800; color: #818cf8; text-transform: uppercase; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                        📌 Variantli Test Savollari (1 — {{ mcq_count }})
+                    </div>
+                    {% for i in mcq_range %}
+                    <div class="mcq-question-item" style="display: flex; align-items: center; justify-content: space-between; background-color: var(--bg-color); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 12px; margin-bottom: 8px;">
+                        <span class="q-num" style="font-weight: 800; font-size: 13px; width: 26px; height: 26px; background-color: var(--primary-color); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;">{{ i }}</span>
+                        
+                        <div class="mcq-options" style="display: flex; gap: 16px; align-items: center;">
+                            <label class="option-label" style="display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; cursor: pointer;">
+                                <input type="radio" name="q_{{ i }}" value="A" style="width: 18px; height: 18px; cursor: pointer;"> A
+                            </label>
+                            <label class="option-label" style="display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; cursor: pointer;">
+                                <input type="radio" name="q_{{ i }}" value="B" style="width: 18px; height: 18px; cursor: pointer;"> B
+                            </label>
+                            <label class="option-label" style="display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; cursor: pointer;">
+                                <input type="radio" name="q_{{ i }}" value="C" style="width: 18px; height: 18px; cursor: pointer;"> C
+                            </label>
+                            <label class="option-label" style="display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 14px; cursor: pointer;">
+                                <input type="radio" name="q_{{ i }}" value="D" style="width: 18px; height: 18px; cursor: pointer;"> D
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Ochiq / Yozma Javobli Savollar -->
+                {% if written_count > 0 %}
+                    <div style="font-size: 13px; font-weight: 800; color: #34d399; text-transform: uppercase; margin: 20px 0 10px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 6px;">
+                        ✍️ Ochiq Javobli Savollar ({{ mcq_count|add:1 }} — {{ mcq_count|add:written_count }})
+                    </div>
+                    
+                    <!-- Full Math & Letter Virtual Keyboard Toolbar -->
+                    <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 14px; padding: 12px 16px; margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 12px; font-weight: 800; color: #34d399;">🧮 TO'LIQ MATEMATIK VA HARFLAR KLAVIATURASI:</span>
+                            <span style="font-size: 11px; color: var(--text-gray);">Kerakli harf/belgini bosing</span>
+                        </div>
+                        
+                        <!-- Tabs for categories -->
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px;">
+                            <span style="font-size: 11px; font-weight: 700; color: #818cf8; margin-right: 4px;">Simvollar:</span>
+                            <button type="button" class="math-btn" onclick="insertMathChar('π')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">π</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('√')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">√</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('/')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">/ (kasr)</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('^2')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">x²</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('^')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">xⁿ</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('π/2')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">π/2</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('π/4')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">π/4</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('3π/4')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">3π/4</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('±')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">±</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('≠')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">≠</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('≤')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">≤</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('≥')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">≥</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('∞')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">∞</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('sin(')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">sin</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('cos(')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">cos</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('tg(')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">tg</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('ctg(')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">ctg</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('log(')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">log</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('ln(')" style="padding: 3px 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">ln</button>
+                        </div>
+
+                        <!-- Greek & Letter Keys -->
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            <span style="font-size: 11px; font-weight: 700; color: #34d399; margin-right: 4px;">Harflar:</span>
+                            <button type="button" class="math-btn" onclick="insertMathChar('α')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">α</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('β')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">β</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('γ')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">γ</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('θ')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">θ</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('Δ')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">Δ</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('a')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">a</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('b')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">b</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('c')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">c</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('d')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">d</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('k')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">k</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('n')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">n</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('m')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">m</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('x')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">x</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('y')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">y</button>
+                            <button type="button" class="math-btn" onclick="insertMathChar('z')" style="padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-color); background: var(--card-bg); font-weight: 800; font-size: 12px; cursor: pointer;">z</button>
+                            
+                            <!-- Control keys -->
+                            <button type="button" class="math-btn" onclick="deleteMathChar()" style="padding: 2px 8px; border-radius: 5px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.15); color: #ef4444; font-weight: 800; font-size: 11px; cursor: pointer;">⌫ O'chirish</button>
+                        </div>
+                    </div>
+
+                    {% for j in written_range %}
+                    <div style="display: flex; align-items: center; gap: 12px; background-color: var(--bg-color); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 12px; margin-bottom: 8px;">
+                        <span style="font-weight: 800; font-size: 13px; width: 26px; height: 26px; background-color: #10b981; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{ j }}</span>
+                        <input type="text" id="written_q_{{ j }}" name="written_q_{{ j }}" placeholder="{{ j }}-savol javobini yozing..." onfocus="activeInput = this" style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 14px; font-weight: 600;">
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+            </div>
+            
+            <button type="submit" class="submit-exam-btn" style="width: 100%; padding: 16px; font-size: 16px; font-weight: 800; border-radius: 14px; background: #10b981; color: white; border: none; cursor: pointer;" onclick="return confirm('Barcha javoblarni topshirishni tasdiqlaysizmi?')">
+                <i class="fa-solid fa-circle-check" style="margin-right: 8px;"></i> Testni Yakunlash va Topshirish
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Disqualification Lock Screen Modal (initially hidden) -->
+<div id="cheatLockOverlay" class="lock-screen-overlay" style="display: none;">
+    <div class="lock-screen-box">
+        <i class="fa-solid fa-user-slash"></i>
+        <h2>Imtihondan Chetlashtirildingiz!</h2>
+        <p>
+            Tizim sizni imtihon oynasidan boshqa oynaga yoki dasturga o'tganingizni aniqladi. Anti-cheat qoidalariga ko'ra, siz ushbu testdan chetlashtirildingiz va natijangiz 0 ball deb qayd etildi. Xabar ustozga yuborildi.
+        </p>
+        <button class="btn btn-primary" onclick="redirectToDashboard()" style="width: 100%; padding: 12px; border-radius: 8px; font-weight: 700;">
+            Dashboardga Qaytish
+        </button>
+    </div>
+</div>
+
+<script>
+    // Proctoring anti-cheat logic
+    const submissionId = "{{ submission.id }}";
+    const cheatUrl = "{% url 'cheat_alert' submission.id %}";
+    let isDisqualified = false;
+    let isScreenLockedOrPowerOff = false;
+
+    // Detect screen lock / display sleep on mobile & desktop
+    window.addEventListener('pagehide', function() {
+        isScreenLockedOrPowerOff = true;
+    });
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            // Check if screen was just locked/turned off
+            setTimeout(function() {
+                if (!isScreenLockedOrPowerOff) {
+                    reportCheating();
+                }
+            }, 300);
+        } else {
+            isScreenLockedOrPowerOff = false;
+        }
+    });
+
+    // Disable Right-Click Context Menu, Copy, and Paste to prevent AI/Chatbot usage
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.addEventListener('copy', event => event.preventDefault());
+    document.addEventListener('paste', event => event.preventDefault());
+
+    function reportCheating() {
+        if (isDisqualified) return;
+        isDisqualified = true;
+
+        // Show lock overlay immediately
+        document.getElementById('cheatLockOverlay').style.display = 'flex';
+
+        // Send cheat log request to backend via AJAX fetch
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch(cheatUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Cheat log registered:", data);
+        })
+        .catch(err => {
+            console.error("Proctoring alert failed to send:", err);
+        });
+    }
+
+    let activeInput = null;
+    function insertMathChar(char) {
+        if (!activeInput) {
+            // Find first written input if none active
+            activeInput = document.querySelector('input[name^="written_q_"]');
+        }
+        if (activeInput) {
+            const start = activeInput.selectionStart || activeInput.value.length;
+            const end = activeInput.selectionEnd || activeInput.value.length;
+            const val = activeInput.value;
+            activeInput.value = val.substring(0, start) + char + val.substring(end);
+            activeInput.focus();
+            activeInput.setSelectionRange(start + char.length, start + char.length);
+        }
+    }
+
+    function deleteMathChar() {
+        if (!activeInput) {
+            activeInput = document.querySelector('input[name^="written_q_"]');
+        }
+        if (activeInput && activeInput.value.length > 0) {
+            const start = activeInput.selectionStart || activeInput.value.length;
+            const end = activeInput.selectionEnd || activeInput.value.length;
+            const val = activeInput.value;
+            if (start > 0 || start !== end) {
+                const delStart = (start === end) ? start - 1 : start;
+                activeInput.value = val.substring(0, delStart) + val.substring(end);
+                activeInput.focus();
+                activeInput.setSelectionRange(delStart, delStart);
+            }
+        }
+    }
+
+    // Live Exam Countdown Timer Logic
+    let totalSecs = parseInt("{{ remaining_secs|default:3600 }}");
+    let alert10mShown = false;
+    let alert5mShown = false;
+
+    function formatTime(secs) {
+        let hrs = Math.floor(secs / 3600);
+        let mins = Math.floor((secs % 3600) / 60);
+        let s = secs % 60;
+        return (hrs < 10 ? '0' : '') + hrs + ':' + (mins < 10 ? '0' : '') + mins + ':' + (s < 10 ? '0' : '') + s;
+    }
+
+    function playBeepSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime); // 880Hz pitch
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.3);
+        } catch(e) {}
+    }
+
+    function updateExamTimer() {
+        const timerElem = document.getElementById('timerDisplay');
+        if (!timerElem) return;
+
+        if (totalSecs <= 0) {
+            timerElem.innerText = "00:00:00";
+            timerElem.style.color = "#ef4444";
+            alert("⏰ Imtihon vaqti to'liq tugadi! Javoblaringiz avtomatik topshirilmoqda...");
+            document.getElementById('examSubmitForm').submit();
+            return;
+        }
+
+        timerElem.innerText = formatTime(totalSecs);
+
+        // 10 minutes warning (600 seconds)
+        if (totalSecs === 600 && !alert10mShown) {
+            alert10mShown = true;
+            playBeepSound();
+            alert("⏰ DIQQAT: Test tugashiga 10 daqiqa qoldi! Shoshiling.");
+        }
+
+        // 5 minutes warning (300 seconds)
+        if (totalSecs === 300 && !alert5mShown) {
+            alert5mShown = true;
+            playBeepSound();
+            timerElem.style.color = "#ef4444";
+            alert("⚠️ SHOSHILING: Test tugashiga bor-yo'g'i 5 daqiqa qoldi!");
+        }
+
+        // Last 5 seconds warning
+        if (totalSecs <= 5) {
+            timerElem.style.color = "#ef4444";
+            timerElem.style.fontSize = "32px";
+            playBeepSound();
+        }
+
+        totalSecs--;
+    }
+
+    setInterval(updateExamTimer, 1000);
+    updateExamTimer();
+
+    function redirectToDashboard() {
+        window.location.href = "{% url 'dashboard' %}";
+    }
+</script>
+{% endblock %}

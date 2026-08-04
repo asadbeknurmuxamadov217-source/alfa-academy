@@ -1,0 +1,294 @@
+{% extends 'students/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Baholash{% endblock %}
+
+{% block active_grades %}active{% endblock %}
+{% block active_t_grades %}active{% endblock %}
+{% block mob_active_grades %}active{% endblock %}
+
+{% block page_title %}Baholar va O'zlashtirish Nazorati{% endblock %}
+
+{% block content %}
+<div class="attendance-filter-card">
+    <form method="get" action="{% url 'grades' %}" id="gradesFilterForm" class="filter-form">
+        <div class="filter-field">
+            <label for="groupSelect"><i class="fa-solid fa-folder-tree"></i> Guruhni tanlang:</label>
+            <select name="group" id="groupSelect" required onchange="this.form.submit()">
+                <option value="" disabled {% if not selected_group_id %}selected{% endif %}>Guruhni tanlang</option>
+                {% for group in groups %}
+                    <option value="{{ group.id }}" {% if selected_group_id == group.id %}selected{% endif %}>{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-field">
+            <label for="dateInput"><i class="fa-solid fa-calendar-days"></i> Sana:</label>
+            <input type="date" name="date" id="dateInput" value="{{ selected_date }}" max="{{ today }}" onchange="this.form.submit()">
+        </div>
+    </form>
+</div>
+
+<!-- Grades Sheet -->
+{% if selected_group_id %}
+    {% if students %}
+        <div class="grades-sheet-container">
+            <div class="grades-sheet-header-info">
+                <span><i class="fa-solid fa-circle-info"></i> Baholash uchun mos doirani bosing. O'chirish uchun faol doirani qayta bosing.</span>
+            </div>
+            
+            <div class="grades-table-card">
+                {% for student in students %}
+                <div class="grade-row-item">
+                    <div class="student-profile-info" onclick="openStudentGradesHistory({{ student.id }})" style="cursor: pointer;" title="O'quvchining barcha baholash tarixini va kommentariyalarini ko'rish">
+                        <div class="student-avatar-small">
+                            {{ student.first_name|slice:":1" }}{{ student.last_name|slice:":1" }}
+                        </div>
+                        <div class="student-text">
+                            <span class="student-fullname" style="color: var(--primary-color); text-decoration: underline; font-weight: 800;">
+                                {{ student.first_name }} {{ student.last_name }} <i class="fa-solid fa-clock-rotate-left" style="font-size: 11px; margin-left: 4px;"></i>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="grades-control-grid">
+                        {% for type_code, type_name in grade_types %}
+                        {% with current_grade_data=student.current_grades|dict_key:type_code %}
+                        <div class="grade-input-box" data-student-id="{{ student.id }}" data-type="{{ type_code }}">
+                            <span class="grade-type-label">{{ type_name }}:</span>
+                            <div class="grade-circles" style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                {% for score in "01234567891" %}
+                                {% with idx=forloop.counter0 %}
+                                    <button class="grade-circle-btn btn-score-{{ idx }} {% if current_grade_data.grade|stringformat:'i' == idx|stringformat:'i' %}active{% endif %}" 
+                                            id="btn-{{ student.id }}-{{ type_code }}-{{ idx }}"
+                                            onclick="saveStudentGrade({{ student.id }}, '{{ type_code }}', {{ idx }}, '{{ selected_date }}', '{{ student.first_name|escapejs }} {{ student.last_name|escapejs }}', '{{ type_name|escapejs }}')"
+                                            style="width: 28px; height: 28px; font-size: 12px; font-weight: 800; border-radius: 50%;">
+                                        {{ idx }}
+                                    </button>
+                                {% endwith %}
+                                {% endfor %}
+                            </div>
+                            
+                            <!-- Comment Button -->
+                            <button class="grade-comment-btn {% if current_grade_data.comment %}has-comment{% endif %}" 
+                                    id="comment-btn-{{ student.id }}-{{ type_code }}" 
+                                    onclick="openCommentModalFor({{ student.id }}, '{{ type_code }}', '{{ selected_date }}', '{{ student.first_name|escapejs }} {{ student.last_name|escapejs }}', '{{ type_name|escapejs }}', '{{ current_grade_data.comment|default:""|escapejs }}')"
+                                    title="Izoh qoldirish"
+                                    style="margin-left: 6px;">
+                                <i class="fa-solid fa-comment-dots"></i>
+                                <span class="comment-tooltip-text" id="comment-text-{{ student.id }}-{{ type_code }}">
+                                    {% if current_grade_data.comment %}{{ current_grade_data.comment }}{% else %}Izoh yozish{% endif %}
+                                </span>
+                            </button>
+                        </div>
+                        {% endwith %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-state-large">
+            <i class="fa-solid fa-users-slash"></i>
+            <h2>Bu guruhda o'quvchilar topilmadi</h2>
+            <p>Iltimos, guruhga o'quvchilar qo'shing.</p>
+            <a href="{% url 'groups_and_students' %}" class="btn btn-primary">O'quvchi qo'shish</a>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="empty-state-large">
+        <i class="fa-solid fa-award"></i>
+        <h2>Baholash uchun guruhni tanlang</h2>
+        <p>Guruh va dars sanasini yuqoridagi filter orqali kiriting.</p>
+    </div>
+{% endif %}
+
+<!-- 1. Comment Dialog Modal -->
+<div id="commentModal" class="modal-overlay">
+    <div class="modal-box modal-box-small">
+        <div class="modal-header">
+            <h3>💬 Bahoga Izoh (Kommentariya) Yozish</h3>
+            <span class="close-btn" onclick="closeModal('commentModal')">&times;</span>
+        </div>
+        <div class="modal-body-content" style="padding: 20px;">
+            <p id="commentModalStudent" style="font-weight: 800; font-size: 15px; color: var(--primary-color); margin-bottom: 4px;">O'quvchi: —</p>
+            <p id="commentModalType" style="font-size: 13px; color: var(--text-gray); margin-bottom: 14px;">Baho turi: —</p>
+            <div class="form-field">
+                <textarea id="commentTextarea" placeholder="Darsdagi faolligi, sabablari yoki izohini yozing..." style="width: 100%; height: 90px; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 14px; font-weight: 600;"></textarea>
+            </div>
+            <div class="form-actions-modal" style="margin-top: 14px;">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('commentModal')">O'tkazib yuborish</button>
+                <button type="button" class="btn btn-submit" id="saveCommentModalBtn" onclick="saveCommentFromModal()">Saqlash</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Student Full History Modal -->
+<div id="studentHistoryModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3 id="historyStudentTitle">📊 O'quvchining Barcha Baholash va Izohlar Tarixi</h3>
+            <span class="close-btn" onclick="closeModal('studentHistoryModal')">&times;</span>
+        </div>
+        <div style="padding: 20px; max-height: 70vh; overflow-y: auto;" id="historyModalBody">
+            <div style="text-align: center; padding: 20px; color: var(--primary-color);">
+                <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                <p>Yuklanmoqda...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    let currentCommentTarget = null;
+
+    function saveStudentGrade(studentId, gradeType, gradeVal, dateStr, studentName, typeName) {
+        // Toggle score highlight optimistically
+        const container = document.querySelector(`.grade-input-box[data-student-id="${studentId}"][data-type="${gradeType}"]`);
+        if (container) {
+            const btns = container.querySelectorAll('.grade-circle-btn');
+            btns.forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`btn-${studentId}-${gradeType}-${gradeVal}`);
+            if (activeBtn) activeBtn.classList.add('active');
+        }
+
+        const currentComment = document.getElementById(`comment-text-${studentId}-${gradeType}`).innerText.replace("Izoh yozish", "").replace("Izoh yo'q", "").trim();
+
+        fetch('/grades/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                grade_type: gradeType,
+                grade: gradeVal,
+                date: dateStr,
+                comment: currentComment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast(`${typeName}: ${gradeVal} ball saqlandi!`, "success");
+                // Open comment modal automatically so teacher can enter a comment if desired
+                openCommentModalFor(studentId, gradeType, dateStr, studentName, typeName, currentComment);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Bahoni saqlashda xatolik!", "error");
+        });
+    }
+
+    function openCommentModalFor(studentId, gradeType, dateStr, studentName, typeName, existingComment) {
+        currentCommentTarget = { studentId, gradeType, dateStr, typeName };
+        document.getElementById('commentModalStudent').innerText = `O'quvchi: ${studentName}`;
+        document.getElementById('commentModalType').innerText = `Baho turi: ${typeName} (${dateStr})`;
+        document.getElementById('commentTextarea').value = existingComment || '';
+        openModal('commentModal');
+    }
+
+    function saveCommentFromModal() {
+        if (!currentCommentTarget) return;
+        const { studentId, gradeType, dateStr, typeName } = currentCommentTarget;
+        const textarea = document.getElementById('commentTextarea');
+        const commentVal = textarea ? textarea.value.trim() : '';
+
+        // Get currently selected grade value
+        const container = document.querySelector(`.grade-input-box[data-student-id="${studentId}"][data-type="${gradeType}"]`);
+        let currentGrade = 5;
+        if (container) {
+            const activeBtn = container.querySelector('.grade-circle-btn.active');
+            if (activeBtn) {
+                currentGrade = parseInt(activeBtn.innerText.trim());
+            }
+        }
+
+        fetch('/grades/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                grade_type: gradeType,
+                grade: currentGrade,
+                date: dateStr,
+                comment: commentVal
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast("Izoh saqlandi!", "success");
+                const commentSpan = document.getElementById(`comment-text-${studentId}-${gradeType}`);
+                const commentBtn = document.getElementById(`comment-btn-${studentId}-${gradeType}`);
+                if (commentSpan) {
+                    commentSpan.innerText = commentVal || "Izoh yozish";
+                }
+                if (commentBtn) {
+                    if (commentVal) commentBtn.classList.add('has-comment');
+                    else commentBtn.classList.remove('has-comment');
+                }
+                closeModal('commentModal');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Izohni saqlashda xatolik!", "error");
+        });
+    }
+
+    function openStudentGradesHistory(studentId) {
+        openModal('studentHistoryModal');
+        const container = document.getElementById('historyModalBody');
+        container.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--primary-color);"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p>Yuklanmoqda...</p></div>`;
+
+        fetch(`/grades/history/${studentId}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('historyStudentTitle').innerText = `📊 ${data.student_name} (${data.group_name}) Baholar Tarixi`;
+            if (data.history && data.history.length > 0) {
+                let html = `
+                    <table class="students-table" style="width:100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                                <th style="padding: 10px;">Sana</th>
+                                <th style="padding: 10px;">Baho Turi</th>
+                                <th style="padding: 10px;">Baho</th>
+                                <th style="padding: 10px;">Izoh / Kommentariya</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                data.history.forEach(item => {
+                    html += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 10px; font-weight: 700;">${item.date}</td>
+                            <td style="padding: 10px;"><span class="badge-count" style="background: rgba(79, 70, 229, 0.15); color: #818cf8;">${item.type_display}</span></td>
+                            <td style="padding: 10px;"><span class="grade-score-circle score-${item.grade}" style="display:inline-block; width:26px; height:26px; text-align:center; line-height:26px; border-radius:50%; font-weight:800;">${item.grade}</span></td>
+                            <td style="padding: 10px; font-weight: 600; color: var(--text-color);">${item.comment}</td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<div style="text-align:center; padding:30px; color: var(--text-gray);"><i class="fa-solid fa-folder-open" style="font-size:32px; opacity:0.5; margin-bottom:10px;"></i><p>Hozircha baholar va izohlar yo'q.</p></div>`;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = `<p style="color: #ef4444; text-align: center;">Tarixni yuklashda xatolik yuz berdi.</p>`;
+        });
+    }
+</script>
+{% endblock %}
+{% endblock %}

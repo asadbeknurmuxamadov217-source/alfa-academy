@@ -1,0 +1,387 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Imtihon Testlarini Boshqarish{% endblock %}
+
+{% block active_certs %}active{% endblock %}
+{% block active_groups %}active{% endblock %}
+
+{% block page_title %}Testlar va Imtihonlar Nazorati{% endblock %}
+
+{% block content %}
+<div class="groups-actions-row">
+    <button class="btn btn-primary" onclick="openModal('createTestModal')">
+        <i class="fa-solid fa-file-circle-plus"></i> Yangi Test Yuklash
+    </button>
+</div>
+
+<!-- Group filter & Student Test Search Form -->
+<div class="attendance-filter-card" style="display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; width: 100%;">
+        <form method="get" action="{% url 'test_list' %}" class="filter-form" style="margin: 0;">
+            <div class="filter-field" style="max-width: 300px;">
+                <label for="groupSelect"><i class="fa-solid fa-folder-tree"></i> Guruhni tanlang:</label>
+                <select name="group" id="groupSelect" onchange="this.form.submit()">
+                    <option value="">Barcha guruhlar</option>
+                    {% for group in groups %}
+                        <option value="{{ group.id }}" {% if selected_group_id == group.id %}selected{% endif %}>{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        <!-- Lupachali O'quvchi Qidiruvi va Hisoboti -->
+        <form method="get" action="{% url 'test_list' %}" style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 500px;">
+            <div style="position: relative; flex: 1;">
+                <input type="text" name="q" value="{{ student_query }}" placeholder="🔎 O'quvchi ismi, familiyasi yoki loginingizni kiritib..." required style="width: 100%; padding: 10px 14px 10px 38px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 14px; font-weight: 600;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 12px; color: var(--primary-color);"></i>
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 13px; white-space: nowrap;">
+                <i class="fa-solid fa-magnifying-glass"></i> Qidirish
+            </button>
+            {% if student_query %}
+                <a href="{% url 'test_list' %}" class="btn btn-cancel" style="padding: 10px 14px; border-radius: 10px; font-size: 13px; text-decoration: none;">Tozalash</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Agar o'quvchi qidirilgan bo'lsa: Haftalik, Oylik va Yillik Test Statistika Hisoboti -->
+    {% if student_stats %}
+    <div style="background: rgba(79, 70, 229, 0.08); border: 1px solid rgba(79, 70, 229, 0.3); border-radius: 16px; padding: 20px; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 16px;">
+            <div>
+                <h3 style="font-size: 18px; font-weight: 800; margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-user-graduate" style="color: var(--primary-color);"></i>
+                    {{ student_stats.student.first_name }} {{ student_stats.student.last_name }} — Testlar Statistikasi
+                </h3>
+                <span style="font-size: 13px; color: var(--text-gray);">
+                    Guruhi: <strong>{{ student_stats.student.group.name }}</strong> | Logini: <strong>{{ student_stats.student.user.username }}</strong>
+                </span>
+            </div>
+
+            <!-- Excel (.csv) Yuklash Tugmasi -->
+            <a href="{% url 'export_student_test_excel' %}?q={{ student_query }}" class="btn btn-success" style="padding: 10px 20px; border-radius: 10px; font-weight: 800; background-color: #10b981; border: none; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-file-excel" style="font-size: 16px;"></i> Test Hisobotini Excel (.csv) Yuklash
+            </a>
+        </div>
+
+        <!-- 3 ta Katta Statistika Qutilari: Haftalik, Oylik va Yillik -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+            <div style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 14px; border-radius: 12px; text-align: center;">
+                <span style="font-size: 12px; color: var(--text-gray); font-weight: 700; text-transform: uppercase;">📅 Haftalik Testlar</span>
+                <h2 style="font-size: 24px; font-weight: 900; color: #818cf8; margin: 6px 0 0 0;">{{ student_stats.weekly_count }} ta</h2>
+            </div>
+            <div style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 14px; border-radius: 12px; text-align: center;">
+                <span style="font-size: 12px; color: var(--text-gray); font-weight: 700; text-transform: uppercase;">📆 Oylik Testlar</span>
+                <h2 style="font-size: 24px; font-weight: 900; color: #34d399; margin: 6px 0 0 0;">{{ student_stats.monthly_count }} ta</h2>
+            </div>
+            <div style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 14px; border-radius: 12px; text-align: center;">
+                <span style="font-size: 12px; color: var(--text-gray); font-weight: 700; text-transform: uppercase;">📊 Yillik Testlar</span>
+                <h2 style="font-size: 24px; font-weight: 900; color: #f59e0b; margin: 6px 0 0 0;">{{ student_stats.yearly_count }} ta</h2>
+            </div>
+            <div style="background: var(--card-bg); border: 1px solid var(--border-color); padding: 14px; border-radius: 12px; text-align: center;">
+                <span style="font-size: 12px; color: var(--text-gray); font-weight: 700; text-transform: uppercase;">📈 O'rtacha Bali</span>
+                <h2 style="font-size: 24px; font-weight: 900; color: var(--primary-color); margin: 6px 0 0 0;">{{ student_stats.avg_score }}%</h2>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Tab headers for Tests and Submissions -->
+<div style="display: flex; gap: 16px; border-bottom: 2px solid var(--border-color); margin-bottom: 24px;">
+    <button id="tabTestsBtn" class="btn" style="background: none; border: none; border-bottom: 3px solid var(--primary-color); color: var(--primary-color); border-radius: 0; padding: 10px 20px; font-weight: 700;" onclick="switchTab('tests')">
+        <i class="fa-solid fa-file-signature"></i> Yuklangan Testlar
+    </button>
+    <button id="tabSubsBtn" class="btn" style="background: none; border: none; color: var(--text-gray); border-radius: 0; padding: 10px 20px; font-weight: 700;" onclick="switchTab('submissions')">
+        <i class="fa-solid fa-user-check"></i> Topshirgan O'quvchilar
+    </button>
+</div>
+
+<!-- Tab Content: Active Tests List -->
+<div id="tabTestsContent" class="accordion-item" style="padding: 24px;">
+    {% if tests %}
+        <div class="students-table-wrap">
+            <table class="students-table">
+                <thead>
+                    <tr>
+                        <th>Imtihon nomi</th>
+                        <th>Guruh</th>
+                        <th>Savollar fayli</th>
+                        <th>Javoblar kaliti / Fayli</th>
+                        <th>Yuklangan sana</th>
+                        <th class="actions-th">Harakat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for test in tests %}
+                    <tr>
+                        <td style="font-weight: 700;">{{ test.title }}</td>
+                        <td>{{ test.group.name }}</td>
+                        <td>
+                            <a href="{{ test.file.url }}" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">
+                                <i class="fa-solid fa-file-pdf"></i> Savollarni ko'rish
+                            </a>
+                        </td>
+                        <td>
+                            {% if test.answers_file %}
+                                <a href="{{ test.answers_file.url }}" target="_blank" style="color: #34d399; font-weight: 700; text-decoration: none;">
+                                    <i class="fa-solid fa-file-lines"></i> Javoblar fayli
+                                </a>
+                            {% elif test.answers_key %}
+                                <code style="background-color: rgba(79, 70, 229, 0.1); color: #818cf8; padding: 4px 8px; border-radius: 6px; font-weight: 700;">{{ test.answers_key }}</code>
+                            {% else %}
+                                <span class="text-muted" style="color: var(--text-gray);">— Qo'olda tekshiriladi</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ test.created_at|date:"d-M, Y" }}</td>
+                        <td class="student-actions">
+                            <form action="{% url 'delete_test' test.id %}" method="post" class="inline-form" onsubmit="return confirm('Testni o\'chirishni tasdiqlaysizmi?')">
+                                {% csrf_token %}
+                                <button type="submit" class="action-btn delete-btn">
+                                    <i class="fa-solid fa-trash"></i> O'chirish
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="group-empty-state">
+            <i class="fa-solid fa-folder-open" style="font-size: 40px; opacity: 0.5; margin-bottom: 12px; display: block;"></i>
+            <p>Hozircha hech qanday test yuklanmagan.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Tab Content: Student Submissions -->
+<div id="tabSubsContent" class="accordion-item" style="padding: 24px; display: none;">
+    {% if submissions %}
+        <div class="students-table-wrap">
+            <table class="students-table">
+                <thead>
+                    <tr>
+                        <th>O'quvchi</th>
+                        <th>Imtihon</th>
+                        <th>Javoblar / Fayl</th>
+                        <th>Topshirilgan vaqti</th>
+                        <th>Holati</th>
+                        <th>Natija (Ball)</th>
+                        <th>Harakat / Baholash</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in submissions %}
+                    <tr {% if sub.status == 'disqualified' %}style="background-color: rgba(239, 68, 68, 0.03);"{% endif %}>
+                        <td class="student-name-td">
+                            <div class="student-avatar-small">
+                                {{ sub.student.first_name|slice:":1" }}{{ sub.student.last_name|slice:":1" }}
+                            </div>
+                            <div>
+                                <span>{{ sub.student.first_name }} {{ sub.student.last_name }}</span>
+                                <div style="font-size: 11px; color: var(--text-gray);">{{ sub.student.group.name }}</div>
+                            </div>
+                        </td>
+                        <td style="font-weight: 600;">{{ sub.test.title }}</td>
+                        <td>
+                            {% if sub.test.test_type == 'MCQ' %}
+                                <span class="meta"><i class="fa-solid fa-list-check"></i> Javoblar: {{ sub.student_answers }}</span>
+                            {% else %}
+                                {% if sub.student_answers %}
+                                    <div style="font-size: 12px; max-width: 250px; white-space: normal; line-height: 1.4; margin-bottom: 6px;">
+                                        <strong>Yozma javobi:</strong> {{ sub.student_answers }}
+                                    </div>
+                                {% endif %}
+                                {% if sub.uploaded_solution %}
+                                    <a href="{{ sub.uploaded_solution.url }}" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">
+                                        <i class="fa-solid fa-file-image"></i> Daftardan rasm/PDF
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>{{ sub.submitted_at|date:"d-M Y, H:i" }}</td>
+                        <td>
+                            {% if sub.status == 'completed' %}
+                                <span class="badge-count" style="background-color: var(--accent-green-light); color: var(--accent-green);">Topshirdi</span>
+                            {% elif sub.status == 'disqualified' %}
+                                <span class="badge-count" style="background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
+                                    <i class="fa-solid fa-user-slash"></i> Chetlashtirildi
+                                </span>
+                            {% else %}
+                                <span class="badge-count" style="background-color: var(--accent-yellow-light); color: var(--accent-yellow);">Boshladi</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if sub.score is not None %}
+                                <span class="badge-count" style="background-color: rgba(79, 70, 229, 0.1); color: var(--primary-color); font-weight: 800;">
+                                    {{ sub.score|floatformat:0 }}%
+                                </span>
+                            {% else %}
+                                <span style="color: #ef4444; font-weight: 700;"><i class="fa-solid fa-hourglass"></i> Tekshirilmoqda</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                {% if sub.test.test_type == 'WRITTEN' and sub.score is None and sub.status == 'completed' %}
+                                    <button class="btn btn-primary" onclick="openGradeModal('{{ sub.id }}')" style="padding: 6px 12px; font-size: 12px;">
+                                        <i class="fa-solid fa-star"></i> Baholash
+                                    </button>
+                                {% endif %}
+                                
+                                <a href="{% url 'reset_test_submission' sub.id %}" 
+                                   onclick="return confirm('Haqiqatdan ham ushbu o\'quvchiga testni qayta topshirish uchun imkon bermoqchimisiz? Eski urinish o\'chiriladi.')" 
+                                   class="btn btn-warning" 
+                                   style="padding: 6px 12px; font-size: 12px; border-radius: 8px; font-weight: 700; background-color: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); text-decoration: none;">
+                                    <i class="fa-solid fa-rotate-right"></i> Qayta imkon berish
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="group-empty-state">
+            <i class="fa-solid fa-users-slash" style="font-size: 40px; opacity: 0.5; margin-bottom: 12px; display: block;"></i>
+            <p>Hozircha hech qanday talaba test topshirmagan.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- ================= MODALS ================= -->
+
+<!-- Create Test Modal -->
+<div id="createTestModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>Yangi Imtihon Testi Yuklash</h2>
+            <span class="close-btn" onclick="closeModal('createTestModal')">&times;</span>
+        </div>
+        <form action="{% url 'create_test' %}" method="post" enctype="multipart/form-data" class="modal-form">
+            {% csrf_token %}
+            <div class="form-field">
+                <label for="test_title">Imtihon/Test nomi:</label>
+                <input type="text" id="test_title" name="title" required placeholder="Masalan: 1-Chorak imtihoni, IELTS Mock Test">
+            </div>
+            
+            <div class="form-field">
+                <label for="test_group">Topshiruvchi guruh:</label>
+                <select id="test_group" name="group" required>
+                    <option value="" disabled selected>Guruhni tanlang</option>
+                    {% for group in groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-field" style="background: rgba(79, 70, 229, 0.08); padding: 14px; border-radius: 12px; border: 1px solid rgba(79, 70, 229, 0.3);">
+                <label for="test_file" style="color: #818cf8; font-weight: 800;"><i class="fa-solid fa-file-pdf"></i> FAQAT Savollar fayli (PDF yoki Rasm) — O'quvchilarga ko'rinadigan savollar:</label>
+                <input type="file" id="test_file" name="file" accept="image/*,application/pdf" required style="margin-top: 6px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px;">
+                <div class="form-field">
+                    <label for="mcq_count">Variantli (A,B,C,D) savollar soni:</label>
+                    <input type="number" id="mcq_count" name="mcq_count" value="30" min="0" required placeholder="Masalan: 30 yoki 35">
+                </div>
+                <div class="form-field">
+                    <label for="written_count">Ochiq / Yozma savollar soni:</label>
+                    <input type="number" id="written_count" name="written_count" value="0" min="0" required placeholder="Masalan: 5 yoki 10">
+                </div>
+            </div>
+
+            <!-- Imtihon vaqti - Yangi alohida qatordan -->
+            <div class="form-field" style="background: rgba(245, 158, 11, 0.08); padding: 14px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3); margin-top: 10px;">
+                <label for="duration_minutes" style="color: #f59e0b; font-weight: 800;"><i class="fa-solid fa-clock"></i> ⏱️ Imtihon Ajratilgan Vaqti (Daqiqada):</label>
+                <input type="number" id="duration_minutes" name="duration_minutes" value="60" min="1" required placeholder="Masalan: 60 daqiqa (yoki 45, 90 daqiqa)" style="margin-top: 6px; width: 100%;">
+            </div>
+            
+            <div class="form-field" style="background: rgba(16, 185, 129, 0.08); padding: 14px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3); margin-top: 10px;">
+                <label for="answers_key" style="color: #34d399; font-weight: 800;"><i class="fa-solid fa-key"></i> Javoblar kaliti (Matn ko'rinishida: A,B,C,D yoki 36:158):</label>
+                <input type="text" id="answers_key" name="answers_key" placeholder="Masalan: A, B, C, D, A, C (Bular o'quvchiga KO'RINMAYDI, avtomatik tekshiradi)" style="margin-top: 6px;">
+            </div>
+
+            <div class="form-field" style="margin-top: 10px; background: rgba(99, 102, 241, 0.08); padding: 14px; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.3);">
+                <label for="answers_file" style="color: #818cf8; font-weight: 800;"><i class="fa-solid fa-file-pdf"></i> 🔑 YOKI Javoblar Faylini Yuklash (PDF yoki TXT) — Tizim javoblarni avtomatik o'qib TEKSHIRADI:</label>
+                <input type="file" id="answers_file" name="answers_file" accept=".pdf,.txt,image/*" style="margin-top: 6px;">
+            </div>
+            
+            <div class="form-actions-modal">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('createTestModal')">Bekor qilish</button>
+                <button type="submit" class="btn btn-submit">Yuklash</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Manual Grade Written Submission Modal -->
+<div id="gradeSubmissionModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>Yozma Ishni Baholash</h2>
+            <span class="close-btn" onclick="closeModal('gradeSubmissionModal')">&times;</span>
+        </div>
+        <form id="gradeSubmissionForm" action="" method="post" class="modal-form">
+            {% csrf_token %}
+            <div class="form-field">
+                <label for="student_score">Olingan ball (% da, 0 dan 100 gacha):</label>
+                <input type="number" id="student_score" name="score" min="0" max="100" required placeholder="Masalan: 85">
+            </div>
+            
+            <div class="form-field">
+                <label for="grade_comment">Ustoz izohi (ixtiyoriy):</label>
+                <input type="text" id="grade_comment" name="comment" placeholder="Masalan: Yaxshi, faqat 3-savolda xatolik bor.">
+            </div>
+            
+            <div class="form-actions-modal">
+                <button type="button" class="btn btn-cancel" onclick="closeModal('gradeSubmissionModal')">Bekor qilish</button>
+                <button type="submit" class="btn btn-submit">Baholashni saqlash</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleMCQField(val) {
+        const mcqField = document.getElementById('mcqKeyField');
+        if (val === 'MCQ') {
+            mcqField.style.display = 'block';
+            document.getElementById('answers_key').required = true;
+        } else {
+            mcqField.style.display = 'none';
+            document.getElementById('answers_key').required = false;
+        }
+    }
+
+    function switchTab(tab) {
+        const tabTestsBtn = document.getElementById('tabTestsBtn');
+        const tabSubsBtn = document.getElementById('tabSubsBtn');
+        const tabTestsContent = document.getElementById('tabTestsContent');
+        const tabSubsContent = document.getElementById('tabSubsContent');
+        
+        if (tab === 'tests') {
+            tabTestsBtn.style.borderBottom = '3px solid var(--primary-color)';
+            tabTestsBtn.style.color = 'var(--primary-color)';
+            tabSubsBtn.style.borderBottom = 'none';
+            tabSubsBtn.style.color = 'var(--text-gray)';
+            tabTestsContent.style.display = 'block';
+            tabSubsContent.style.display = 'none';
+        } else {
+            tabSubsBtn.style.borderBottom = '3px solid var(--primary-color)';
+            tabSubsBtn.style.color = 'var(--primary-color)';
+            tabTestsBtn.style.borderBottom = 'none';
+            tabTestsBtn.style.color = 'var(--text-gray)';
+            tabTestsContent.style.display = 'none';
+            tabSubsContent.style.display = 'block';
+        }
+    }
+
+    function openGradeModal(submissionId) {
+        const form = document.getElementById('gradeSubmissionForm');
+        form.action = `/tests/grade/${submissionId}/`;
+        openModal('gradeSubmissionModal');
+    }
+</script>
+{% endblock %}

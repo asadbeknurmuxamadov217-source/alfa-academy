@@ -1,0 +1,244 @@
+{% extends 'students/base.html' %}
+
+{% block title %}Oylik To'lovlar{% endblock %}
+
+{% block active_groups %}active{% endblock %}
+{% block mob_active_groups %}active{% endblock %}
+
+{% block page_title %}O'quvchilar To'lov Nazorati{% endblock %}
+
+{% block content %}
+<div class="attendance-filter-card">
+    <form method="get" action="{% url 'payments' %}" id="paymentsFilterForm" class="filter-form">
+        <div class="filter-field">
+            <label for="groupSelect"><i class="fa-solid fa-folder-tree"></i> Guruhni tanlang:</label>
+            <select name="group" id="groupSelect" required onchange="this.form.submit()">
+                <option value="" disabled {% if not selected_group_id %}selected{% endif %}>Guruhni tanlang</option>
+                {% for group in groups %}
+                    <option value="{{ group.id }}" {% if selected_group_id == group.id %}selected{% endif %}>{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="filter-field">
+            <label for="monthInput"><i class="fa-solid fa-calendar-days"></i> To'lov oyi:</label>
+            <input type="month" name="month" id="monthInput" value="{{ selected_month }}" max="{{ today }}" onchange="this.form.submit()">
+        </div>
+    </form>
+</div>
+
+<!-- Payments Table -->
+{% if selected_group_id %}
+    {% if students %}
+        <!-- Enhanced Payment Summary Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px;">
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 12px; font-weight: 700; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px;">✓ To'lagan O'quvchilar</div>
+                    <div style="font-size: 22px; font-weight: 800; color: var(--text-color); margin-top: 2px;"><span id="summary-paid">0</span> ta</div>
+                </div>
+                <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(16, 185, 129, 0.2); color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+
+            <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 12px; font-weight: 700; color: #ef4444; text-transform: uppercase; letter-spacing: 0.5px;">✗ To'lamagan O'quvchilar</div>
+                    <div style="font-size: 22px; font-weight: 800; color: var(--text-color); margin-top: 2px;"><span id="summary-unpaid">0</span> ta</div>
+                </div>
+                <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(239, 68, 68, 0.2); color: #ef4444; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </div>
+            </div>
+
+            <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid #6366f1; padding: 14px 18px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 12px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: 0.5px;">💰 Jami Yig'ilgan Summa</div>
+                    <div style="font-size: 20px; font-weight: 800; color: var(--text-color); margin-top: 2px;"><span id="summary-total-amount">0</span> UZS</div>
+                </div>
+                <div style="width: 42px; height: 42px; border-radius: 10px; background: rgba(99, 102, 241, 0.2); color: #6366f1; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="grades-table-card">
+            {% for student in students %}
+            <div class="grade-row-item payment-row" data-student-id="{{ student.id }}">
+                <div class="student-profile-info">
+                    <div class="student-avatar-small">
+                        {{ student.first_name|slice:":1" }}{{ student.last_name|slice:":1" }}
+                    </div>
+                    <div class="student-text">
+                        <span class="student-fullname">{{ student.first_name }} {{ student.last_name }}</span>
+                        {% if student.phone %}
+                            <span class="student-phone"><i class="fa-solid fa-phone"></i> {{ student.phone }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="grades-control-grid" style="align-items: center; gap: 12px;">
+                    <!-- Payment Amount Input -->
+                    <div class="form-field" style="margin-bottom: 0; min-width: 180px;">
+                        <div class="input-group" style="display: flex; align-items: center; position: relative;">
+                            <span style="position: absolute; left: 12px; font-weight: 700; color: var(--text-muted); font-size: 13px;">UZS</span>
+                            <input type="number" 
+                                   class="payment-amount-input" 
+                                   id="amount-{{ student.id }}" 
+                                   value="{% if student.current_payment %}{{ student.current_payment.amount|stringformat:'.0f' }}{% else %}0{% endif %}"
+                                   style="padding: 10px 10px 10px 48px; border-radius: 8px; border: 1px solid var(--border-color); font-weight: 700; font-size: 14px; width: 100%;"
+                                   placeholder="Summa"
+                                   onchange="saveStudentPayment({{ student.id }})"
+                                   onkeyup="updatePaymentsSummary()">
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Status Toggle Button -->
+                    <button class="status-btn {% if student.current_payment.is_paid %}btn-present active{% else %}btn-absent{% endif %}" 
+                            id="pay-btn-{{ student.id }}"
+                            style="min-width: 140px; justify-content: center; padding: 10px 16px; border-radius: 8px; font-weight: 800; transition: all 0.2s; {% if student.current_payment.is_paid %}background: #10b981; color: white;{% else %}background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid #ef4444;{% endif %}"
+                            onclick="toggleStudentPaymentStatus({{ student.id }})">
+                        <i class="fa-solid {% if student.current_payment.is_paid %}fa-circle-check{% else %}fa-circle-xmark{% endif %}" id="pay-icon-{{ student.id }}"></i> 
+                        <span id="pay-text-{{ student.id }}">{% if student.current_payment.is_paid %}To'landi{% else %}To'lanmadi{% endif %}</span>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state-large">
+            <i class="fa-solid fa-users-slash"></i>
+            <h2>Bu guruhda o'quvchilar topilmadi</h2>
+            <p>Iltimos, guruhga o'quvchilar qo'shing.</p>
+            <a href="{% url 'groups_and_students' %}" class="btn btn-primary">O'quvchi qo'shish</a>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="empty-state-large">
+        <i class="fa-solid fa-money-check-dollar"></i>
+        <h2>Oylik to'lovlarni belgilash uchun guruhni tanlang</h2>
+        <p>Guruh va to'lov oyini yuqoridagi filter orqali tanlashingiz mumkin.</p>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        updatePaymentsSummary();
+    });
+    
+    const csrfToken = '{{ csrf_token }}';
+
+    // Save payment details via AJAX
+    function saveStudentPayment(studentId) {
+        const month = document.getElementById('monthInput') ? document.getElementById('monthInput').value : '';
+        const amount = document.getElementById(`amount-${studentId}`) ? document.getElementById(`amount-${studentId}`).value : 0;
+        const payBtn = document.getElementById(`pay-btn-${studentId}`);
+        const isPaid = payBtn ? payBtn.classList.contains('active') : false;
+        
+        fetch('/payments/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                month: month,
+                amount: amount,
+                is_paid: isPaid
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Payment amount saved:", data);
+            updatePaymentsSummary();
+        })
+        .catch(error => {
+            console.error("Save amount error:", error);
+        });
+    }
+    
+    // Toggle payment status (Paid / Unpaid)
+    function toggleStudentPaymentStatus(studentId) {
+        const month = document.getElementById('monthInput') ? document.getElementById('monthInput').value : '';
+        const amountInput = document.getElementById(`amount-${studentId}`);
+        const amount = amountInput ? amountInput.value : 0;
+        const payBtn = document.getElementById(`pay-btn-${studentId}`);
+        const payIcon = document.getElementById(`pay-icon-${studentId}`);
+        const payText = document.getElementById(`pay-text-${studentId}`);
+        
+        const isPaid = !payBtn.classList.contains('active');
+        
+        // Optimistic UI update
+        if (isPaid) {
+            payBtn.classList.add('active');
+            payBtn.style.background = '#10b981';
+            payBtn.style.color = 'white';
+            payBtn.style.border = 'none';
+            payIcon.className = 'fa-solid fa-circle-check';
+            payText.innerText = "To'landi";
+        } else {
+            payBtn.classList.remove('active');
+            payBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+            payBtn.style.color = '#ef4444';
+            payBtn.style.border = '1px solid #ef4444';
+            payIcon.className = 'fa-solid fa-circle-xmark';
+            payText.innerText = "To'lanmadi";
+        }
+
+        updatePaymentsSummary();
+        
+        fetch('/payments/save/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                student_id: studentId,
+                month: month,
+                amount: amount,
+                is_paid: isPaid
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Payment status saved:", data);
+            updatePaymentsSummary();
+        })
+        .catch(error => {
+            console.error("Save payment error:", error);
+        });
+    }
+    
+    function updatePaymentsSummary() {
+        const rows = document.querySelectorAll('.payment-row');
+        if (rows.length === 0) return;
+        
+        let paid = 0;
+        let unpaid = 0;
+        let totalAmount = 0;
+        
+        rows.forEach(row => {
+            const studentId = row.getAttribute('data-student-id');
+            const payBtn = document.getElementById(`pay-btn-${studentId}`);
+            const amountInput = document.getElementById(`amount-${studentId}`);
+            const val = parseFloat(amountInput ? amountInput.value : 0) || 0;
+
+            if (payBtn && payBtn.classList.contains('active')) {
+                paid++;
+                totalAmount += val;
+            } else {
+                unpaid++;
+            }
+        });
+        
+        document.getElementById('summary-paid').innerText = paid;
+        document.getElementById('summary-unpaid').innerText = unpaid;
+        document.getElementById('summary-total-amount').innerText = totalAmount.toLocaleString('fr-FR');
+    }
+</script>
+{% endblock %}
