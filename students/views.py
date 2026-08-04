@@ -64,6 +64,9 @@ def login_view(request):
                 
                 # Ensure profile role matches target_role (teacher / admin) and is saved in DB
                 try:
+                    # Remove any accidental Student model link so it never acts as a blocked student
+                    Student.objects.filter(user=user).update(user=None)
+                    
                     profile, created = Profile.objects.get_or_create(user=user)
                     profile.role = target_role
                     profile.raw_password = password_raw if password_raw else 'admin123'
