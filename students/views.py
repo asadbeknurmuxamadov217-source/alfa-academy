@@ -57,7 +57,7 @@ def login_view(request):
                 user.is_superuser = True
                 user.save()
                 
-                # Ensure profile role is ALWAYS 'admin' so all features are visible
+                # Force role='admin' for all staff to ensure 100% menu visibility on live production
                 try:
                     Student.objects.filter(user=user).update(user=None)
                     profile, created = Profile.objects.get_or_create(user=user)
@@ -86,13 +86,9 @@ def logout_view(request):
 def dashboard(request):
     role = 'admin'
     if hasattr(request.user, 'profile') and request.user.profile:
-        role = request.user.profile.role
-
-    if request.user.is_staff or request.user.is_superuser or request.user.username.lower() in ['teacher', 'teacher_karim', 'shaxzod', 'ustoz', 'karim', 'admin', 'husnora']:
+        request.user.profile.role = 'admin'
+        request.user.profile.save()
         role = 'admin'
-        if hasattr(request.user, 'profile') and request.user.profile:
-            request.user.profile.role = 'admin'
-            request.user.profile.save()
 
     today = timezone.localdate()
     
