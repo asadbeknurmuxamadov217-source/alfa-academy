@@ -364,6 +364,9 @@ def delete_course(request, course_id):
     messages.success(request, f"'{course_name}' kursi muvaffaqiyatli o'chirildi!")
     return redirect('staff_manage')
 
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
 @login_required
 @require_POST
 def add_student(request):
