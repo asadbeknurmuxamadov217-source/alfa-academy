@@ -26,6 +26,8 @@ SECRET_KEY = 'django-insecure-tx0qr0be=6taac$*k9#sn64v#&5q41_)zh900=szfe8y(t9^-v
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com', 'http://*.onrender.com', 'https://alfa-academy-5smk.onrender.com']
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
