@@ -243,9 +243,11 @@
     <div class="questions-panel">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <h3 style="margin: 0; font-size: 16px; font-weight: 800;"><i class="fa-solid fa-file-lines"></i> Imtihon Savollari</h3>
+            {% if test.file %}
             <a href="{{ test.file.url }}" target="_blank" class="btn" style="font-size: 12px; padding: 6px 12px; border-radius: 8px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 700; text-decoration: none;">
                 <i class="fa-solid fa-up-right-from-square"></i> Alohida oynada ochish
             </a>
+            {% endif %}
         </div>
         
         <div class="file-viewer-wrap" style="height: 650px; background: #1e293b; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-color); position: relative;">
