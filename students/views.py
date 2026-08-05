@@ -103,19 +103,25 @@ def logout_view(request):
 def dashboard(request):
     # Determine role safely
     profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'student'})
-    role = profile.role
     
-    # Auto-set staff role for staff members
-    if request.user.is_staff or request.user.is_superuser or request.user.username.lower() in ['admin', 'shaxzod', 'teacher', 'teacher_karim', 'ustoz', 'karim', 'husnora']:
+    # Known staff usernames
+    known_staff = ['admin', 'shaxzod', 'teacher', 'teacher_karim', 'ustoz', 'karim', 'husnora']
+    
+    if request.user.username.lower() in known_staff:
         role = 'admin'
-        if profile.role != 'admin':
-            profile.role = 'admin'
-            profile.save()
-    elif hasattr(request.user, 'student_profile') and request.user.student_profile:
+        request.user.is_staff = True
+        request.user.is_superuser = True
+        request.user.save()
+        profile.role = 'admin'
+        profile.save()
+    else:
+        # Standard Student
         role = 'student'
-        if profile.role != 'student':
-            profile.role = 'student'
-            profile.save()
+        request.user.is_staff = False
+        request.user.is_superuser = False
+        request.user.save()
+        profile.role = 'student'
+        profile.save()
 
     today = timezone.localdate()
     
