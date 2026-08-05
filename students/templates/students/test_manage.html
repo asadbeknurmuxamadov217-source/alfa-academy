@@ -119,8 +119,8 @@
                         <td style="font-weight: 700;">{{ test.title }}</td>
                         <td>{{ test.group.name }}</td>
                         <td>
-                            {% if test.file|safe_file_url %}
-                                <a href="{{ test.file|safe_file_url }}" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">
+                            {% if test.file and test.file.name %}
+                                <a href="{% if test.file %}{{ test.file.url }}{% endif %}" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">
                                     <i class="fa-solid fa-file-pdf"></i> Savollarni ko'rish
                                 </a>
                             {% else %}
