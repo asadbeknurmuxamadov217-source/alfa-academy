@@ -33,47 +33,60 @@ def login_view(request):
         password_raw = request.POST.get('password', '').strip()
         
         if username_raw:
-            try:
-                user = User.objects.filter(username__iexact=username_raw).first()
-                if not user:
-                    user = User.objects.create_superuser(username=username_raw, email=f'{username_raw}@alfa.uz', password=password_raw if password_raw else 'admin123')
-                
-                # Custom naming
-                if username_raw.lower() == 'shaxzod':
-                    user.first_name = "Shaxzod"
-                    user.last_name = "Boltayev"
-                elif username_raw.lower() in ['teacher', 'teacher_karim', 'ustoz', 'karim']:
-                    user.first_name = "Karimjon"
-                    user.last_name = "Ustoz"
-                elif username_raw.lower() == 'admin':
-                    user.first_name = "Dasturchi"
-                    user.last_name = "Admin"
-                elif username_raw.lower() == 'husnora':
-                    user.first_name = "HUSNORA"
-                    user.last_name = "ALIMOVA"
-
-                user.set_password(password_raw if password_raw else 'admin123')
-                user.is_staff = True
-                user.is_superuser = True
-                user.save()
-                
-                # Force role='admin' for all staff to ensure 100% menu visibility on live production
+            # Check if this is a known admin/staff username override
+            known_staff = ['admin', 'shaxzod', 'teacher', 'teacher_karim', 'ustoz', 'karim', 'husnora']
+            
+            if username_raw.lower() in known_staff:
                 try:
-                    Student.objects.filter(user=user).update(user=None)
-                    profile, created = Profile.objects.get_or_create(user=user)
+                    user = User.objects.filter(username__iexact=username_raw).first()
+                    if not user:
+                        user = User.objects.create_superuser(username=username_raw, email=f'{username_raw}@alfa.uz', password=password_raw if password_raw else 'admin123')
+                    
+                    if username_raw.lower() == 'shaxzod':
+                        user.first_name = "Shaxzod"
+                        user.last_name = "Boltayev"
+                    elif username_raw.lower() in ['teacher', 'teacher_karim', 'ustoz', 'karim']:
+                        user.first_name = "Karimjon"
+                        user.last_name = "Ustoz"
+                    elif username_raw.lower() == 'admin':
+                        user.first_name = "Dasturchi"
+                        user.last_name = "Admin"
+                    elif username_raw.lower() == 'husnora':
+                        user.first_name = "HUSNORA"
+                        user.last_name = "ALIMOVA"
+
+                    user.set_password(password_raw if password_raw else 'admin123')
+                    user.is_staff = True
+                    user.is_superuser = True
+                    user.save()
+                    
+                    profile, _ = Profile.objects.get_or_create(user=user)
                     profile.role = 'admin'
                     profile.raw_password = password_raw if password_raw else 'admin123'
                     profile.save()
                     user.profile = profile
-                except Exception as pe:
-                    print(f"Profile warning: {pe}")
-                
-                user.backend = 'django.contrib.auth.backends.ModelBackend'
-                login(request, user)
-                return redirect('dashboard')
-            except Exception as e:
-                print(f"LOGIN ERROR: {e}")
-                error_msg = "Kirishda xatolik yuz berdi: " + str(e)
+                    
+                    user.backend = 'django.contrib.auth.backends.ModelBackend'
+                    login(request, user)
+                    return redirect('dashboard')
+                except Exception as e:
+                    print(f"STAFF LOGIN ERROR: {e}")
+                    error_msg = "Kirishda xatolik: " + str(e)
+            else:
+                # Normal standard authentication for Students and custom users
+                user = authenticate(request, username=username_raw, password=password_raw)
+                if user is not None:
+                    login(request, user)
+                    return redirect('dashboard')
+                else:
+                    # Fallback check case-insensitive or raw password match
+                    user_obj = User.objects.filter(username__iexact=username_raw).first()
+                    if user_obj and user_obj.check_password(password_raw):
+                        user_obj.backend = 'django.contrib.auth.backends.ModelBackend'
+                        login(request, user_obj)
+                        return redirect('dashboard')
+                    else:
+                        error_msg = "Login yoki parol noto'g'ri kiritildi!"
 
     return render(request, 'students/login.html', {'error_msg': error_msg})
 
@@ -84,12 +97,21 @@ def logout_view(request):
 # --- DASHBOARD VIEW ---
 @login_required(login_url='login')
 def dashboard(request):
-    # Ensure every logged in user gets a valid Profile with admin role
-    profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'admin', 'raw_password': 'admin123'})
-    profile.role = 'admin'
-    profile.save()
-    request.user.profile = profile
-    role = 'admin'
+    # Determine role safely
+    profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'student'})
+    role = profile.role
+    
+    # Auto-set staff role for staff members
+    if request.user.is_staff or request.user.is_superuser or request.user.username.lower() in ['admin', 'shaxzod', 'teacher', 'teacher_karim', 'ustoz', 'karim', 'husnora']:
+        role = 'admin'
+        if profile.role != 'admin':
+            profile.role = 'admin'
+            profile.save()
+    elif hasattr(request.user, 'student_profile') and request.user.student_profile:
+        role = 'student'
+        if profile.role != 'student':
+            profile.role = 'student'
+            profile.save()
 
     today = timezone.localdate()
     
