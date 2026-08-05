@@ -24,11 +24,15 @@ def role_required(allowed_roles):
 
 # --- AUTH VIEWS ---
 def login_view(request):
-    if request.user.is_authenticated:
+    if request.method == 'GET' and request.user.is_authenticated:
         return redirect('dashboard')
         
     error_msg = None
     if request.method == 'POST':
+        # Auto-logout previous user if a new login attempt is submitted
+        if request.user.is_authenticated:
+            logout(request)
+            
         username_raw = request.POST.get('username', '').strip()
         password_raw = request.POST.get('password', '').strip()
         
