@@ -24,14 +24,19 @@
 
     <!-- Main Container -->
     <div class="app-container">
-        
-        <!-- Sidebar for Desktop -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
+        <!-- Mobile Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMobileSidebar()"></div>
+
+        <!-- Sidebar for Desktop & Mobile -->
+        <aside class="sidebar" id="appSidebar">
+            <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <a href="{% url 'landing_page' %}" class="logo" style="text-decoration: none; display: flex; align-items: center; gap: 10px;">
                     <img src="{% static 'images/alfa_clean_logo.png' %}?v=3" alt="ALFA Logo" style="width: 34px; height: 34px; object-fit: contain;">
                     <span class="logo-text" style="font-size: 20px; font-weight: 800; color: white; letter-spacing: 1px;">ALFA</span>
                 </a>
+                <button type="button" class="mobile-close-btn" onclick="toggleMobileSidebar()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer; display: none;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
             <nav class="sidebar-nav">
                 <ul>
@@ -109,13 +114,7 @@
                             {% if request.user.first_name %}{{ request.user.first_name }} {{ request.user.last_name }}{% else %}{{ request.user.username }}{% endif %}
                         </span>
                         <span class="user-role" style="font-size: 12px; font-weight: 700; color: #34d399; margin-top: 2px; display: block;">
-                            {% if request.user.profile.role == 'admin' %}
-                                👑 Administrator
-                            {% elif request.user.profile.role == 'teacher' %}
-                                👨‍🏫 O'qituvchi {% if request.user.profile.subject %}({{ request.user.profile.subject }}){% endif %}
-                            {% else %}
-                                👨‍🎓 O'quvchi
-                            {% endif %}
+                            👑 Administrator / Ustoz
                         </span>
                     </div>
                 </div>
@@ -131,7 +130,7 @@
         <main class="main-content">
             <!-- Topbar (Search & Date info) -->
             <header class="topbar">
-                <div class="menu-toggle" id="menuToggle">
+                <div class="menu-toggle" id="menuToggle" onclick="toggleMobileSidebar()">
                     <i class="fa-solid fa-bars"></i>
                 </div>
                 <div class="page-title-wrap">
@@ -155,10 +154,10 @@
         <nav class="bottom-nav">
             <a href="{% url 'dashboard' %}" class="bottom-nav-item {% block mob_active_dashboard %}{% endblock %}">
                 <i class="fa-solid fa-chart-line"></i>
-                <span>Dashboard</span>
+                <span>Oyna</span>
             </a>
             
-            {% if request.user.profile.role == 'admin' %}
+            {% if request.user.profile.role != 'student' %}
                 <a href="{% url 'groups_and_students' %}" class="bottom-nav-item {% block mob_active_groups %}{% endblock %}">
                     <i class="fa-solid fa-users"></i>
                     <span>Guruhlar</span>
@@ -167,28 +166,15 @@
                     <i class="fa-solid fa-calendar-check"></i>
                     <span>Davomat</span>
                 </a>
-                <a href="{% url 'payments' %}" class="bottom-nav-item {% block mob_active_payments %}{% endblock %}">
-                    <i class="fa-solid fa-wallet"></i>
-                    <span>To'lovlar</span>
+                <a href="{% url 'grades' %}" class="bottom-nav-item {% block mob_active_grades %}{% endblock %}">
+                    <i class="fa-solid fa-star"></i>
+                    <span>Jurnal</span>
                 </a>
                 <a href="{% url 'certificates_list' %}" class="bottom-nav-item {% block mob_active_certs %}{% endblock %}">
                     <i class="fa-solid fa-file-invoice"></i>
-                    <span>Natijalar</span>
+                    <span>Sertifikat</span>
                 </a>
-            {% elif request.user.profile.role == 'teacher' %}
-                <a href="{% url 'groups_and_students' %}" class="bottom-nav-item {% block mob_active_t_groups %}{% endblock %}">
-                    <i class="fa-solid fa-users"></i>
-                    <span>Guruhlar</span>
-                </a>
-                <a href="{% url 'grades' %}" class="bottom-nav-item {% block mob_active_grades %}{% endblock %}">
-                    <i class="fa-solid fa-star"></i>
-                    <span>Baholar</span>
-                </a>
-                <a href="{% url 'certificates_list' %}" class="bottom-nav-item {% block mob_active_t_certs %}{% endblock %}">
-                    <i class="fa-solid fa-file-invoice"></i>
-                    <span>Natijalar</span>
-                </a>
-            {% elif request.user.profile.role == 'student' %}
+            {% else %}
                 <a href="{% url 'test_list' %}" class="bottom-nav-item {% block mob_active_student_tests %}{% endblock %}">
                     <i class="fa-solid fa-file-signature"></i>
                     <span>Testlarim</span>
@@ -197,6 +183,18 @@
         </nav>
         
     </div>
+
+    <!-- Mobile Sidebar JS Toggle -->
+    <script>
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+        }
+    </script>
 
     <!-- Script imports -->
     <script src="{% static 'js/app.js' %}"></script>
