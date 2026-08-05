@@ -198,8 +198,8 @@
                                         <strong>Yozma javobi:</strong> {{ sub.student_answers }}
                                     </div>
                                 {% endif %}
-                                {% if sub.uploaded_solution %}
-                                    <a href="{{ sub.uploaded_solution.url }}" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">
+                                {% if sub.uploaded_solution|safe_file_url %}
+                                    <a href="{{ sub.uploaded_solution|safe_file_url }}" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">
                                         <i class="fa-solid fa-file-image"></i> Daftardan rasm/PDF
                                     </a>
                                 {% endif %}
