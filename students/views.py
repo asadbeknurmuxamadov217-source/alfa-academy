@@ -1131,9 +1131,9 @@ def test_list(request):
         
         if selected_group_id:
             group = get_object_or_404(Group, id=selected_group_id)
-            tests = Test.objects.filter(group=group).order_by('-id')
+            tests = Test.objects.filter(group=group).exclude(file='').exclude(file__isnull=True).order_by('-id')
         else:
-            tests = Test.objects.all().order_by('-id')
+            tests = Test.objects.filter().exclude(file='').exclude(file__isnull=True).order_by('-id')
             
         submissions = StudentTestSubmission.objects.select_related('student', 'student__group', 'test').order_by('-submitted_at')
         
