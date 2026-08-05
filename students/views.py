@@ -302,7 +302,8 @@ def groups_and_students(request):
     }
     return render(request, 'students/students_list.html', context)
 
-@role_required(['admin'])
+@csrf_exempt
+@role_required(['admin', 'teacher'])
 @require_POST
 def add_group(request):
     name = request.POST.get('name', '').strip()
@@ -334,7 +335,8 @@ def add_group(request):
         return redirect('groups_and_students')
     return HttpResponseBadRequest("Guruh nomi kiritilmadi")
 
-@role_required(['admin'])
+@csrf_exempt
+@role_required(['admin', 'teacher'])
 def delete_group(request, group_id):
     group = get_object_or_404(Group, id=group_id)
     group_name = group.name
@@ -342,6 +344,7 @@ def delete_group(request, group_id):
     messages.success(request, f"'{group_name}' guruhi muvaffaqiyatli o'chirildi!")
     return redirect('groups_and_students')
 
+@csrf_exempt
 @role_required(['admin', 'teacher'])
 @require_POST
 def edit_group(request, group_id):
@@ -356,7 +359,8 @@ def edit_group(request, group_id):
         messages.success(request, f"Guruh nomi '{name}'ga muvaffaqiyatli o'zgartirildi!")
     return redirect('groups_and_students')
 
-@role_required(['admin'])
+@csrf_exempt
+@role_required(['admin', 'teacher'])
 def delete_course(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     course_name = course.name
