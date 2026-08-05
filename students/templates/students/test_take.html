@@ -1,4 +1,5 @@
 {% extends 'students/base.html' %}
+{% load custom_filters %}
 
 {% block title %}Test Topshirish — {{ test.title }}{% endblock %}
 
@@ -243,15 +244,15 @@
     <div class="questions-panel">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
             <h3 style="margin: 0; font-size: 16px; font-weight: 800;"><i class="fa-solid fa-file-lines"></i> Imtihon Savollari</h3>
-            {% if test.file %}
-            <a href="{{ test.file.url }}" target="_blank" class="btn" style="font-size: 12px; padding: 6px 12px; border-radius: 8px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 700; text-decoration: none;">
+            {% if test.file|safe_file_url %}
+            <a href="{{ test.file|safe_file_url }}" target="_blank" class="btn" style="font-size: 12px; padding: 6px 12px; border-radius: 8px; background: rgba(129, 140, 248, 0.15); color: #818cf8; font-weight: 700; text-decoration: none;">
                 <i class="fa-solid fa-up-right-from-square"></i> Alohida oynada ochish
             </a>
             {% endif %}
         </div>
         
         <div class="file-viewer-wrap" style="height: 650px; background: #1e293b; border-radius: 14px; overflow: hidden; border: 1px solid var(--border-color); position: relative;">
-            {% if ".pdf" in test.file.name|lower %}
+            {% if test.file and ".pdf" in test.file.name|lower %}
                 <!-- PDF.js Canvas Container -->
                 <div id="pdfCanvasContainer" style="width: 100%; height: 100%; overflow-y: auto; text-align: center; background: #0f172a; padding: 10px;">
                     <div id="pdfLoadingText" style="color: #818cf8; font-size: 14px; font-weight: 700; margin-top: 40px;">
@@ -260,13 +261,13 @@
                 </div>
 
                 <!-- Fallback Iframe if Canvas fails -->
-                <iframe id="pdfFallbackIframe" src="{{ test.file.url }}" width="100%" height="100%" style="border: none; display: none;"></iframe>
+                <iframe id="pdfFallbackIframe" src="{{ test.file|safe_file_url }}" width="100%" height="100%" style="border: none; display: none;"></iframe>
 
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
                 <script>
                     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                     
-                    const pdfUrl = "{{ test.file.url }}";
+                    const pdfUrl = "{{ test.file|safe_file_url }}";
                     const container = document.getElementById('pdfCanvasContainer');
 
                     pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
