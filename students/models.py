@@ -171,7 +171,7 @@ class Test(models.Model):
     title = models.CharField(max_length=200, verbose_name="Test nomi")
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='tests', verbose_name="Guruh")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tests', verbose_name="Yaratuvchi")
-    file = models.FileField(upload_to='tests/', verbose_name="Savollar PDF yoki Rasm fayli")
+    file = models.FileField(upload_to='tests/', blank=True, null=True, verbose_name="Savollar PDF yoki Rasm fayli")
     mcq_count = models.IntegerField(default=30, verbose_name="Variantli (A,B,C,D) savollar soni")
     written_count = models.IntegerField(default=0, verbose_name="Ochiq / Yozma savollar soni")
     duration_minutes = models.IntegerField(default=60, verbose_name="Imtihon vaqti (daqiqa)")
