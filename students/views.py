@@ -1129,11 +1129,17 @@ def test_list(request):
         groups = Group.objects.all()
         students_all = Student.objects.select_related('group').all()
         
+        def is_valid_test(t):
+            try:
+                return bool(t.file and t.file.name and t.file.url)
+            except Exception:
+                return False
+
         if selected_group_id:
             group = get_object_or_404(Group, id=selected_group_id)
-            tests = [t for t in Test.objects.filter(group=group).order_by('-id') if t.file and t.file.name]
+            tests = [t for t in Test.objects.filter(group=group).order_by('-id') if is_valid_test(t)]
         else:
-            tests = [t for t in Test.objects.all().order_by('-id') if t.file and t.file.name]
+            tests = [t for t in Test.objects.all().order_by('-id') if is_valid_test(t)]
             
         submissions = StudentTestSubmission.objects.select_related('student', 'student__group', 'test').order_by('-submitted_at')
         
