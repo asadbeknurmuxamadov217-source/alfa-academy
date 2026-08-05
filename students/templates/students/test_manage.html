@@ -118,8 +118,8 @@
                         <td style="font-weight: 700;">{{ test.title }}</td>
                         <td>{{ test.group.name }}</td>
                         <td>
-                            {% if test.file %}
-                                <a href="{{ test.file.url }}" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">
+                            {% if test.get_file_url %}
+                                <a href="{{ test.get_file_url }}" target="_blank" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">
                                     <i class="fa-solid fa-file-pdf"></i> Savollarni ko'rish
                                 </a>
                             {% else %}
@@ -127,8 +127,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if test.answers_file %}
-                                <a href="{{ test.answers_file.url }}" target="_blank" style="color: #34d399; font-weight: 700; text-decoration: none;">
+                            {% if test.get_answers_file_url %}
+                                <a href="{{ test.get_answers_file_url }}" target="_blank" style="color: #34d399; font-weight: 700; text-decoration: none;">
                                     <i class="fa-solid fa-file-lines"></i> Javoblar fayli
                                 </a>
                             {% elif test.answers_key %}

@@ -179,6 +179,20 @@ class Test(models.Model):
     answers_file = models.FileField(upload_to='test_answers/', blank=True, null=True, verbose_name="Javoblar fayli (TXT/PDF/Rasm)")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Yaratilgan vaqti")
 
+    @property
+    def get_file_url(self):
+        try:
+            return self.file.url if self.file else None
+        except ValueError:
+            return None
+
+    @property
+    def get_answers_file_url(self):
+        try:
+            return self.answers_file.url if self.answers_file else None
+        except ValueError:
+            return None
+
     def __str__(self):
         return f"{self.title} - {self.group.name}"
 
