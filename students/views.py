@@ -1134,10 +1134,18 @@ def test_list(request):
         for t in raw_tests.order_by('-id'):
             try:
                 if t.file and t.file.name:
-                    _ = t.file.url
-                    valid_tests.append(t)
+                    t.safe_url = t.file.url
+                else:
+                    t.safe_url = None
+                if t.answers_file and t.answers_file.name:
+                    t.safe_answers_url = t.answers_file.url
+                else:
+                    t.safe_answers_url = None
+                valid_tests.append(t)
             except Exception:
-                continue
+                t.safe_url = None
+                t.safe_answers_url = None
+                valid_tests.append(t)
         tests = valid_tests
             
         submissions = StudentTestSubmission.objects.select_related('student', 'student__group', 'test').order_by('-submitted_at')
