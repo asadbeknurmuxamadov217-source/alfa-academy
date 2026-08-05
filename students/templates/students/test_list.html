@@ -66,9 +66,11 @@
                             <td class="student-actions">
                                 <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end;">
                                     <!-- Savollar PDF faylini ko'rish -->
-                                    <a href="{{ item.test.file.url }}" target="_blank" class="btn btn-cancel" style="padding: 8px 12px; font-size: 12px; font-weight: 700; border-radius: 8px; text-decoration: none; border: 1px solid var(--border-color); color: #818cf8; white-space: nowrap;">
-                                        <i class="fa-solid fa-file-pdf"></i> Savollarni ko'rish
-                                    </a>
+                                    {% if item.test.file %}
+                                        <a href="{{ item.test.file.url }}" target="_blank" class="btn btn-cancel" style="padding: 8px 12px; font-size: 12px; font-weight: 700; border-radius: 8px; text-decoration: none; border: 1px solid var(--border-color); color: #818cf8; white-space: nowrap;">
+                                            <i class="fa-solid fa-file-pdf"></i> Savollarni ko'rish
+                                        </a>
+                                    {% endif %}
 
                                     {% if not item.submission %}
                                         <a href="{% url 'take_test' item.test.id %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 8px; text-decoration: none; white-space: nowrap;">
