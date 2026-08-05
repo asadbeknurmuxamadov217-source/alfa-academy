@@ -364,7 +364,7 @@ def delete_course(request, course_id):
     messages.success(request, f"'{course_name}' kursi muvaffaqiyatli o'chirildi!")
     return redirect('staff_manage')
 
-@role_required(['admin', 'teacher'])
+@login_required
 @require_POST
 def add_student(request):
     first_name = request.POST.get('first_name', '').strip()
@@ -422,7 +422,7 @@ def add_student(request):
     messages.error(request, "Ma'lumotlar to'liq emas (Ism va Guruh majburiy)")
     return redirect('groups_and_students')
 
-@role_required(['admin', 'teacher'])
+@login_required
 @require_POST
 def edit_student(request, student_id):
     student = get_object_or_404(Student, id=student_id)
@@ -441,7 +441,7 @@ def edit_student(request, student_id):
         return redirect('groups_and_students')
     return HttpResponseBadRequest("Tahrirlashda xato")
 
-@role_required(['admin', 'teacher'])
+@login_required
 @require_POST
 def delete_student(request, student_id):
     student = get_object_or_404(Student, id=student_id)
