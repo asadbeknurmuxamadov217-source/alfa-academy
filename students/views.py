@@ -105,24 +105,10 @@ def dashboard(request):
     # Determine role safely
     profile, _ = Profile.objects.get_or_create(user=request.user, defaults={'role': 'student'})
     
-    # Known staff usernames
-    known_staff = ['admin', 'shaxzod', 'teacher', 'teacher_karim', 'ustoz', 'karim', 'husnora']
-    
-    if request.user.username.lower() in known_staff:
-        role = 'admin'
-        request.user.is_staff = True
-        request.user.is_superuser = True
-        request.user.save()
-        profile.role = 'admin'
-        profile.save()
+    if profile.role in ['admin', 'teacher']:
+        role = profile.role
     else:
-        # Standard Student
         role = 'student'
-        request.user.is_staff = False
-        request.user.is_superuser = False
-        request.user.save()
-        profile.role = 'student'
-        profile.save()
 
     today = timezone.localdate()
     
