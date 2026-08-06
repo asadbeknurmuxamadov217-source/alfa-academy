@@ -697,54 +697,58 @@ def get_student_monthly_attendance_details(request, student_id):
 
 @role_required(['admin', 'teacher'])
 def export_student_attendance_excel(request):
-    import csv
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from django.http import HttpResponse
 
     q = request.GET.get('q', '').strip()
-    if not q:
-        messages.error(request, "Iltimos, o'quvchi ismi, familiyasi yoki loginini kiriting!")
-        return redirect('attendance')
+    group_id = request.GET.get('group_id')
 
-    student = Student.objects.filter(
-        Q(first_name__icontains=q) |
-        Q(last_name__icontains=q) |
-        Q(user__username__iexact=q) |
-        Q(phone__icontains=q)
-    ).first()
+    # If specific student search query provided
+    student = None
+    if q:
+        student = Student.objects.filter(
+            Q(first_name__icontains=q) |
+            Q(last_name__icontains=q) |
+            Q(user__username__iexact=q) |
+            Q(phone__icontains=q)
+        ).first()
 
-    if not student:
-        messages.error(request, f"'{q}' bo'yicha hech qanday o'quvchi topilmadi!")
-        return redirect('attendance')
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Davomat Hisoboti"
 
-    # Fetch all attendance records from registration till now
-    attendances = Attendance.objects.filter(student=student).order_by('date')
+    # Styling definitions
+    header_font = Font(name='Calibri', size=14, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='4F46E5', end_color='4F46E5', fill_type='solid')
+    sub_header_fill = PatternFill(start_color='E0E7FF', end_color='E0E7FF', fill_type='solid')
+    table_header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+    table_header_fill = PatternFill(start_color='1E293B', end_color='1E293B', fill_type='solid')
 
-    response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
-    filename = f"{student.first_name}_{student.last_name}_davomat_hisobot.csv"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
-
-    # Use semicolon delimiter so MS Excel splits columns properly into A, B, C, D cells
-    writer = csv.writer(response, delimiter=';')
-    response.write('\ufeff'.encode('utf8'))
-
-    writer.writerow(['ALFA Academy - O\'quvchi Davomat Hisoboti'])
-    writer.writerow(['O\'quvchi Ismi:', f"{student.first_name} {student.last_name}"])
-    writer.writerow(['Tizim Logini:', student.user.username if student.user else "Biriktirilmagan"])
-    writer.writerow(['Guruhi:', student.group.name])
-    writer.writerow(['Telefon:', student.phone or "Kiritilmagan"])
-    writer.writerow([])
-    writer.writerow(['#', 'Sana', 'Kun', 'Davomat Holati'])
+    thin_border = Border(
+        left=Side(style='thin', color='D1D5DB'),
+        right=Side(style='thin', color='D1D5DB'),
+        top=Side(style='thin', color='D1D5DB'),
+        bottom=Side(style='thin', color='D1D5DB')
+    )
 
     status_labels = {
-        'P': 'Keldi',
-        'A': 'Kelmadi',
-        'L': 'Kechikdi',
-        'E': 'Sababli'
+        'P': 'Keldi (✓)',
+        'A': 'Kelmadi (✗)',
+        'L': 'Kechikdi (🕒)',
+        'E': 'Sababli (💬)'
+    }
+
+    status_fills = {
+        'P': PatternFill(start_color='D1FAE5', end_color='D1FAE5', fill_type='solid'), # Green
+        'A': PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid'), # Red
+        'L': PatternFill(start_color='FEF3C7', end_color='FEF3C7', fill_type='solid'), # Yellow
+        'E': PatternFill(start_color='EDE9FE', end_color='EDE9FE', fill_type='solid'), # Purple
     }
 
     days_uz = {
         'Monday': 'Dushanba',
-        'Tuesday': 'Shanba',
+        'Tuesday': 'Seshanba',
         'Wednesday': 'Chorshanba',
         'Thursday': 'Payshanba',
         'Friday': 'Juma',
@@ -752,13 +756,312 @@ def export_student_attendance_excel(request):
         'Sunday': 'Yakshanba'
     }
 
-    if attendances.exists():
-        for idx, att in enumerate(attendances, 1):
-            day_name = days_uz.get(att.date.strftime('%A'), att.date.strftime('%A'))
-            writer.writerow([idx, att.date.strftime('%Y-%m-%d'), day_name, status_labels.get(att.status, att.status)])
-    else:
-        writer.writerow(['—', 'Hozircha davomat saqlanmagan', '—', '—'])
+    if student:
+        # Export single student's attendance history
+        attendances = Attendance.objects.filter(student=student).order_by('date')
+        
+        ws.merge_cells('A1:E1')
+        title_cell = ws['A1']
+        title_cell.value = "ALFA ACADEMY - O'QUVCHI DAVOMAT HISOBOTI"
+        title_cell.font = header_font
+        title_cell.fill = header_fill
+        title_cell.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[1].height = 35
 
+        ws['A3'] = "O'quvchi Ismi:"
+        ws['B3'] = f"{student.first_name} {student.last_name}"
+        ws['A4'] = "Tizim Logini:"
+        ws['B4'] = student.user.username if student.user else "Biriktirilmagan"
+        ws['A5'] = "Guruhi:"
+        ws['B5'] = student.group.name if student.group else "-"
+        ws['A6'] = "Telefon:"
+        ws['B6'] = student.phone or "Kiritilmagan"
+
+        for r in range(3, 7):
+            ws[f'A{r}'].font = Font(bold=True)
+            ws[f'A{r}'].fill = sub_header_fill
+
+        headers = ['#', 'Sana', 'Hafta Kuni', 'Davomat Holati', 'Izoh / Sabab']
+        ws.append([])
+        ws.append(headers)
+        
+        table_header_row = 8
+        for col_num, h_text in enumerate(headers, 1):
+            cell = ws.cell(row=table_header_row, column=col_num)
+            cell.font = table_header_font
+            cell.fill = table_header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        ws.row_dimensions[table_header_row].height = 25
+
+        row_idx = 9
+        if attendances.exists():
+            for idx, att in enumerate(attendances, 1):
+                day_name = days_uz.get(att.date.strftime('%A'), att.date.strftime('%A'))
+                st_text = status_labels.get(att.status, att.status)
+                
+                c1 = ws.cell(row=row_idx, column=1, value=idx)
+                c2 = ws.cell(row=row_idx, column=2, value=att.date.strftime('%Y-%m-%d'))
+                c3 = ws.cell(row=row_idx, column=3, value=day_name)
+                c4 = ws.cell(row=row_idx, column=4, value=st_text)
+                c5 = ws.cell(row=row_idx, column=5, value=att.comment or "")
+
+                c1.alignment = Alignment(horizontal='center')
+                c2.alignment = Alignment(horizontal='center')
+                c3.alignment = Alignment(horizontal='center')
+                c4.alignment = Alignment(horizontal='center')
+                
+                if att.status in status_fills:
+                    c4.fill = status_fills[att.status]
+
+                for cell in [c1, c2, c3, c4, c5]:
+                    cell.border = thin_border
+                
+                row_idx += 1
+        else:
+            ws.merge_cells(start_row=9, start_column=1, end_row=9, end_column=5)
+            c = ws.cell(row=9, column=1, value="Ushbu o'quvchi uchun davomat saqlanmagan")
+            c.alignment = Alignment(horizontal='center')
+
+        filename = f"Davomat_{student.first_name}_{student.last_name}.xlsx"
+
+    elif group_id:
+        # Export group attendance matrix
+        group = get_object_or_404(Group, id=group_id)
+        students = group.students.all().order_by('first_name', 'last_name')
+        attendances = Attendance.objects.filter(student__group=group).order_by('date')
+
+        ws.merge_cells('A1:F1')
+        title_cell = ws['A1']
+        title_cell.value = f"ALFA ACADEMY - {group.name.upper()} GURUHI DAVOMAT HISOBOTI"
+        title_cell.font = header_font
+        title_cell.fill = header_fill
+        title_cell.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[1].height = 35
+
+        headers = ['#', 'O\'quvchi F.I.O', 'Sana', 'Hafta Kuni', 'Holati', 'Izoh']
+        ws.append([])
+        ws.append(headers)
+        
+        table_header_row = 3
+        for col_num, h_text in enumerate(headers, 1):
+            cell = ws.cell(row=table_header_row, column=col_num)
+            cell.font = table_header_font
+            cell.fill = table_header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        row_idx = 4
+        item_count = 1
+        for st in students:
+            st_atts = attendances.filter(student=st)
+            if st_atts.exists():
+                for att in st_atts:
+                    day_name = days_uz.get(att.date.strftime('%A'), att.date.strftime('%A'))
+                    st_text = status_labels.get(att.status, att.status)
+                    
+                    c1 = ws.cell(row=row_idx, column=1, value=item_count)
+                    c2 = ws.cell(row=row_idx, column=2, value=f"{st.first_name} {st.last_name}")
+                    c3 = ws.cell(row=row_idx, column=3, value=att.date.strftime('%Y-%m-%d'))
+                    c4 = ws.cell(row=row_idx, column=4, value=day_name)
+                    c5 = ws.cell(row=row_idx, column=5, value=st_text)
+                    c6 = ws.cell(row=row_idx, column=6, value=att.comment or "")
+
+                    c1.alignment = Alignment(horizontal='center')
+                    c3.alignment = Alignment(horizontal='center')
+                    c4.alignment = Alignment(horizontal='center')
+                    c5.alignment = Alignment(horizontal='center')
+                    
+                    if att.status in status_fills:
+                        c5.fill = status_fills[att.status]
+
+                    for cell in [c1, c2, c3, c4, c5, c6]:
+                        cell.border = thin_border
+                    
+                    row_idx += 1
+                    item_count += 1
+
+        filename = f"Davomat_{group.name}.xlsx"
+
+    else:
+        # Export all attendance records
+        attendances = Attendance.objects.select_related('student', 'student__group').all().order_by('-date')[:5000]
+
+        ws.merge_cells('A1:F1')
+        title_cell = ws['A1']
+        title_cell.value = "ALFA ACADEMY - UMUMIY DAVOMAT HISOBOTI"
+        title_cell.font = header_font
+        title_cell.fill = header_fill
+        title_cell.alignment = Alignment(horizontal='center', vertical='center')
+        ws.row_dimensions[1].height = 35
+
+        headers = ['#', 'O\'quvchi F.I.O', 'Guruh', 'Sana', 'Holati', 'Izoh']
+        ws.append([])
+        ws.append(headers)
+
+        table_header_row = 3
+        for col_num, h_text in enumerate(headers, 1):
+            cell = ws.cell(row=table_header_row, column=col_num)
+            cell.font = table_header_font
+            cell.fill = table_header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        row_idx = 4
+        for idx, att in enumerate(attendances, 1):
+            st_text = status_labels.get(att.status, att.status)
+            c1 = ws.cell(row=row_idx, column=1, value=idx)
+            c2 = ws.cell(row=row_idx, column=2, value=f"{att.student.first_name} {att.student.last_name}")
+            c3 = ws.cell(row=row_idx, column=3, value=att.student.group.name if att.student.group else "-")
+            c4 = ws.cell(row=row_idx, column=4, value=att.date.strftime('%Y-%m-%d'))
+            c5 = ws.cell(row=row_idx, column=5, value=st_text)
+            c6 = ws.cell(row=row_idx, column=6, value=att.comment or "")
+
+            c1.alignment = Alignment(horizontal='center')
+            c4.alignment = Alignment(horizontal='center')
+            c5.alignment = Alignment(horizontal='center')
+
+            if att.status in status_fills:
+                c5.fill = status_fills[att.status]
+
+            for cell in [c1, c2, c3, c4, c5, c6]:
+                cell.border = thin_border
+
+            row_idx += 1
+
+        filename = "Umumiy_Davomat_Hisoboti.xlsx"
+
+    # Auto-adjust column widths
+    for col in ws.columns:
+        max_len = 0
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        for cell in col:
+            if cell.value:
+                max_len = max(max_len, len(str(cell.value)))
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+
+
+@role_required(['admin', 'teacher'])
+def export_student_test_excel(request):
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from django.http import HttpResponse
+
+    one_year_ago = timezone.now() - timezone.timedelta(days=365)
+    
+    # Filter test submissions within 1 year
+    submissions = StudentTestSubmission.objects.filter(
+        submitted_at__gte=one_year_ago
+    ).select_related('student', 'student__group', 'test').order_by('-submitted_at')
+
+    group_id = request.GET.get('group')
+    test_id = request.GET.get('test')
+    
+    if group_id:
+        submissions = submissions.filter(test__group_id=group_id)
+    if test_id:
+        submissions = submissions.filter(test_id=test_id)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "1 Yillik Test Natijalari"
+
+    # Styling definitions
+    header_font = Font(name='Calibri', size=14, bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='0D9488', end_color='0D9488', fill_type='solid') # Teal Accent
+    table_header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+    table_header_fill = PatternFill(start_color='1E293B', end_color='1E293B', fill_type='solid')
+
+    thin_border = Border(
+        left=Side(style='thin', color='D1D5DB'),
+        right=Side(style='thin', color='D1D5DB'),
+        top=Side(style='thin', color='D1D5DB'),
+        bottom=Side(style='thin', color='D1D5DB')
+    )
+
+    ws.merge_cells('A1:H1')
+    title_cell = ws['A1']
+    title_cell.value = "ALFA ACADEMY - 1 YILLIK TEST NATIJALARI HISOBOTI"
+    title_cell.font = header_font
+    title_cell.fill = header_fill
+    title_cell.alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[1].height = 35
+
+    headers = ['#', 'O\'quvchi F.I.O', 'Guruh', 'Test Nomi', 'Ball (%)', 'Holati', 'Topshirilgan Vaqt', 'Qoidabuzarlik']
+    ws.append([])
+    ws.append(headers)
+
+    table_header_row = 3
+    for col_num, h_text in enumerate(headers, 1):
+        cell = ws.cell(row=table_header_row, column=col_num)
+        cell.font = table_header_font
+        cell.fill = table_header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    ws.row_dimensions[table_header_row].height = 25
+
+    status_labels = {
+        'started': 'Boshladi',
+        'completed': 'Topshirdi',
+        'disqualified': 'Chetlashtirildi ❌'
+    }
+
+    status_fills = {
+        'completed': PatternFill(start_color='D1FAE5', end_color='D1FAE5', fill_type='solid'),
+        'disqualified': PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid'),
+    }
+
+    row_idx = 4
+    if submissions.exists():
+        for idx, sub in enumerate(submissions, 1):
+            score_text = f"{sub.score}%" if sub.score is not None else "Baholanmadi"
+            status_text = status_labels.get(sub.status, sub.status)
+            date_text = sub.submitted_at.strftime('%Y-%m-%d %H:%M') if sub.submitted_at else "-"
+            cheat_text = sub.cheated_at.strftime('%Y-%m-%d %H:%M') if sub.cheated_at else "Yo'q"
+
+            c1 = ws.cell(row=row_idx, column=1, value=idx)
+            c2 = ws.cell(row=row_idx, column=2, value=f"{sub.student.first_name} {sub.student.last_name}")
+            c3 = ws.cell(row=row_idx, column=3, value=sub.student.group.name if sub.student.group else "-")
+            c4 = ws.cell(row=row_idx, column=4, value=sub.test.title)
+            c5 = ws.cell(row=row_idx, column=5, value=score_text)
+            c6 = ws.cell(row=row_idx, column=6, value=status_text)
+            c7 = ws.cell(row=row_idx, column=7, value=date_text)
+            c8 = ws.cell(row=row_idx, column=8, value=cheat_text)
+
+            c1.alignment = Alignment(horizontal='center')
+            c5.alignment = Alignment(horizontal='center')
+            c6.alignment = Alignment(horizontal='center')
+            c7.alignment = Alignment(horizontal='center')
+            c8.alignment = Alignment(horizontal='center')
+
+            if sub.status in status_fills:
+                c6.fill = status_fills[sub.status]
+
+            for cell in [c1, c2, c3, c4, c5, c6, c7, c8]:
+                cell.border = thin_border
+
+            row_idx += 1
+    else:
+        ws.merge_cells(start_row=4, start_column=1, end_row=4, end_column=8)
+        c = ws.cell(row=4, column=1, value="So'nggi 1 yil ichida test topshirish natijalari topilmadi")
+        c.alignment = Alignment(horizontal='center')
+
+    # Auto-adjust column widths
+    for col in ws.columns:
+        max_len = 0
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        for cell in col:
+            if cell.value:
+                max_len = max(max_len, len(str(cell.value)))
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"1_Yillik_Test_Natijalari_{timezone.now().strftime('%Y_%m_%d')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
     return response
 
 # --- GRADING VIEW ---

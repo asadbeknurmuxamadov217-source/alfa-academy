@@ -15,7 +15,7 @@
     </button>
 </div>
 
-<!-- Group filter & Student Test Search Form -->
+<!-- Group filter & Student Test Search Form & 1 Year Excel Download -->
 <div class="attendance-filter-card" style="display: flex; flex-direction: column; gap: 16px;">
     <div style="display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: center; width: 100%;">
         <form method="get" action="{% url 'test_list' %}" class="filter-form" style="margin: 0;">
@@ -29,6 +29,11 @@
                 </select>
             </div>
         </form>
+
+        <!-- 1 Yillik Excel Yuklab Olish Tugmasi -->
+        <a href="{% url 'export_student_test_excel' %}{% if selected_group_id %}?group={{ selected_group_id }}{% endif %}" class="btn" style="padding: 10px 18px; border-radius: 10px; font-weight: 800; background-color: #0d9488; color: white; text-decoration: none; font-size: 13px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);">
+            <i class="fa-solid fa-file-excel" style="font-size: 18px;"></i> 1 Yillik Test Natijalarini Excel Yuklash
+        </a>
 
         <!-- Lupachali O'quvchi Qidiruvi va Hisoboti -->
         <form method="get" action="{% url 'test_list' %}" style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 500px;">
